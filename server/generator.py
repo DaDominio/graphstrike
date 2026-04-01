@@ -305,6 +305,11 @@ def generate_all_episodes(
     print(f"Generated {total} episodes in {output_dir}")
 
 
-if __name__ == "__main__":
+def main() -> None:
+    """Entry point: called by `uv run generate-episodes` or directly."""
     here = Path(__file__).parent.parent / "episodes"
     generate_all_episodes(here)
+
+
+if __name__ == "__main__":
+    main()

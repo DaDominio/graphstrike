@@ -1,3 +1,20 @@
+---
+title: Fake Gang Detection OpenEnv
+emoji: 🕵️
+colorFrom: blue
+colorTo: indigo
+sdk: docker
+app_port: 7860
+pinned: false
+license: mit
+tags:
+  - reinforcement-learning
+  - social-network
+  - fraud-detection
+  - openenv
+  - llm-agent
+---
+
 # Fake Gang Detection — OpenEnv RL Environment
 
 An OpenEnv-compatible reinforcement learning environment where an LLM detective

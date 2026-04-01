@@ -5,18 +5,32 @@ build-backend = "hatchling.build"
 [project]
 name = "fake-gang-env"
 version = "1.0.0"
-description = "OpenEnv environment for fake Instagram gang detection"
-requires-python = ">=3.10"
+description = "OpenEnv RL environment for detecting coordinated fake Instagram account gangs"
+requires-python = ">=3.12"
 dependencies = [
     "fastapi>=0.110.0",
     "uvicorn[standard]>=0.29.0",
     "pydantic>=2.6.0",
+    "boto3>=1.34.0",
+    "botocore>=1.34.0",
     "requests>=2.31.0",
 ]
 
 [project.scripts]
-server = "fake_gang_env.server.app:main"
-generate-episodes = "fake_gang_env.server.generator:main"
+# `uv run server`            → starts the environment server (PORT env var, default 7860)
+# `uv run generate-episodes` → regenerates the 150 synthetic episode JSON files
+server             = "server.app:main"
+generate-episodes  = "server.generator:main"
 
 [tool.hatch.build.targets.wheel]
-packages = ["fake_gang_env"]
+# Include server/ and agent/ packages.
+# Root-level modules (models.py, bedrock_model.py, etc.) are on sys.path via
+# server/app.py's sys.path.insert calls and uv's editable install.
+packages = ["server", "agent"]
+
+[tool.hatch.build.targets.wheel.force-include]
+# Also pull in root-level modules that the server imports at runtime
+"models.py"        = "models.py"
+"bedrock_model.py" = "bedrock_model.py"
+"client.py"        = "client.py"
+"inference.py"     = "inference.py"

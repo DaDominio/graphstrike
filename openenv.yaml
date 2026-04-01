@@ -2,18 +2,65 @@ name: fake_gang_env
 version: "1.0.0"
 description: >
   RL environment for detecting coordinated fake Instagram account gangs.
-  An AI detective agent must identify all 10 members of a fake gang at once
-  before they evade detection. Three difficulty levels: easy, medium, hard.
+  An AI detective agent must identify all 10 members of a coordinated fake
+  account gang before they evade detection. Three difficulty levels with
+  increasing network size, decoys, and real-time evasion events.
 author: OpenENV Hackathon
 tags:
   - social-network
   - fraud-detection
   - graph
   - rl
+  - fake-account-detection
+
+# ── Server configuration ──────────────────────────────────────────────────────
 server:
-  dockerfile: server/Dockerfile
-  port: 8000
+  # Root Dockerfile: environment server only (no training loop, no AWS needed).
+  # For full local training (Qwen3 + Reflexion + Hybrid Policy): server/Dockerfile
+  dockerfile: Dockerfile
+  port: 7860
+
 environment_variables:
-  WORKERS: "1"
-  PORT: "8000"
+  PORT: "7860"
   HOST: "0.0.0.0"
+  WORKERS: "1"
+  AWS_DEFAULT_REGION: "us-east-1"
+  # AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY are only needed for training.
+  # The environment server and /baseline endpoint work without them.
+
+# ── Task definitions ──────────────────────────────────────────────────────────
+tasks:
+  - name: easy
+    description: "50 accounts, 10 fakes, no evasion, 30 steps"
+    win_recall: 0.8
+    win_precision: 0.7
+    max_steps: 30
+
+  - name: medium
+    description: "200 accounts, 10 fakes + 20 decoys, 1 evasion event, 50 steps"
+    win_recall: 0.8
+    win_precision: 0.7
+    max_steps: 50
+
+  - name: hard
+    description: "1000 accounts, 10 fakes + 50 decoys, 4 evasion events, 80 steps"
+    win_recall: 0.9
+    win_precision: 0.8
+    max_steps: 80
+
+# ── Action schema ─────────────────────────────────────────────────────────────
+action_schema:
+  action_type:
+    type: string
+    enum: [inspect, investigate_network, flag, unflag, submit]
+  account_id:
+    type: string
+    description: "Required for all actions except submit"
+
+# ── Score range ───────────────────────────────────────────────────────────────
+score_range: [0.0, 1.0]
+grader_formula: >
+  if recall >= 0.8 and precision >= 0.7:
+    score = 0.55 + 0.20*recall + 0.15*precision + 0.10*efficiency
+  else:
+    score = 0.30*recall + 0.10*precision

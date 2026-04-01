@@ -52,6 +52,12 @@ _THRESHOLDS: Dict[str, float] = {
     "hard": 0.45,
 }
 
+# Bootstrap raw-feature score — same calibration as inference.py
+# 0.30*photo + 0.20*bio + 0.50*comment_repeat >= 0.40
+# Gang member (any task): ~0.57–0.78; decoy: ~0.25; real: ~0.07
+_BOOTSTRAP_RAW_THRESHOLD = 0.40
+_SHARED_IP_GANG_THRESHOLD = 5
+
 
 # ---------------------------------------------------------------------------
 # Rule-based single-step decision
@@ -78,10 +84,30 @@ def get_rule_action(obs: FakeGangObservation) -> Tuple[FakeGangAction, float]:
         )
 
     # Priority 3 — FLAG high-risk inspected accounts
+    # Two signal paths: composite fake_risk (active post-cascade) OR bootstrap raw
+    # node score (catches first gang members before graph signals are established).
     for p in sorted(obs.visible_accounts, key=lambda x: x.fake_risk_score, reverse=True):
-        if p.fake_risk_score >= threshold and p.account_id not in obs.flagged_ids:
-            # Confidence scales with how far above threshold the score is
+        if p.account_id in obs.flagged_ids:
+            continue
+        if p.hub_legitimacy_score > 0.75:
+            continue  # protect celebrities
+
+        bootstrap_raw = (
+            0.30 * p.photo_reuse_score
+            + 0.20 * p.bio_template_score
+            + 0.50 * p.comment_repeat_score
+        )
+
+        if p.shared_ip_count >= _SHARED_IP_GANG_THRESHOLD:
+            return FakeGangAction(action_type=ActionType.FLAG, account_id=p.account_id), 0.97
+
+        if p.fake_risk_score >= threshold:
             confidence = min(0.95, 0.70 + (p.fake_risk_score - threshold) * 0.60)
+            return FakeGangAction(action_type=ActionType.FLAG, account_id=p.account_id), confidence
+
+        if bootstrap_raw >= _BOOTSTRAP_RAW_THRESHOLD:
+            # Bootstrap confidence: how far above threshold the raw score is
+            confidence = min(0.88, 0.60 + (bootstrap_raw - _BOOTSTRAP_RAW_THRESHOLD) * 0.80)
             return FakeGangAction(action_type=ActionType.FLAG, account_id=p.account_id), confidence
 
     # Priority 4 — SUBMIT if fully confident (10 flagged or almost out of steps)

@@ -25,14 +25,27 @@ sys.path.insert(0, str(_ROOT / "server"))
 from models import ActionType, FakeGangAction, FakeGangObservation
 
 # ---------------------------------------------------------------------------
-# Per-task thresholds (tune down for harder tasks since signals are noisier)
+# Thresholds
 # ---------------------------------------------------------------------------
 
+# Composite fake_risk_score thresholds (effective AFTER graph signals are active,
+# i.e., once some accounts are flagged and flagged_neighbor_count > 0).
 THRESHOLDS: Dict[str, float] = {
     "easy": 0.60,
     "medium": 0.50,
     "hard": 0.45,
 }
+
+# Bootstrap raw-feature score for INITIAL detection before any flags exist.
+# Formula: 0.30*photo_reuse + 0.20*bio_template + 0.50*comment_repeat
+# This weights comment_repeat heavily because it spans [0.60,0.90] for ALL gang
+# members regardless of difficulty, vs. [0.00,0.08] for real accounts.
+# Threshold 0.40 catches gang members (~0.57–0.78) but not decoys (~0.25).
+#
+# Also: shared_ip_count >= 5 is an independent near-certain gang signal
+# (gang members share one IP subnet → shared_ip_count = 9 for all difficulties).
+_BOOTSTRAP_RAW_THRESHOLD = 0.40
+_SHARED_IP_GANG_THRESHOLD = 5
 
 
 # ---------------------------------------------------------------------------
@@ -56,10 +69,29 @@ def run_rule_based_episode(env, task: str, seed: int = 0) -> float:
                                           account_id=uninspected_suspects[0]))
             continue
 
-        # Priority 2: Flag any inspected account above risk threshold
+        # Priority 2: Flag any inspected account that exceeds EITHER:
+        #   a) composite fake_risk_score >= task threshold  (active after graph signals exist)
+        #   b) bootstrap raw-node score >= threshold        (catches first members before cascade)
+        #   c) shared_ip_count >= threshold                 (near-certain gang signal)
+        # Skip celebrities (hub_legitimacy > 0.75).
         flagged_this_turn = False
-        for p in obs.visible_accounts:
-            if p.fake_risk_score >= threshold and p.account_id not in obs.flagged_ids:
+        for p in sorted(obs.visible_accounts, key=lambda x: x.fake_risk_score, reverse=True):
+            if p.account_id in obs.flagged_ids:
+                continue
+            if p.hub_legitimacy_score > 0.75:
+                continue  # protect celebrities from false positives
+
+            bootstrap_raw = (
+                0.30 * p.photo_reuse_score
+                + 0.20 * p.bio_template_score
+                + 0.50 * p.comment_repeat_score
+            )
+            should_flag = (
+                p.fake_risk_score >= threshold
+                or bootstrap_raw >= _BOOTSTRAP_RAW_THRESHOLD
+                or p.shared_ip_count >= _SHARED_IP_GANG_THRESHOLD
+            )
+            if should_flag:
                 obs = env.step(FakeGangAction(action_type=ActionType.FLAG,
                                               account_id=p.account_id))
                 flagged_this_turn = True
