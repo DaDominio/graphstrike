@@ -27,8 +27,23 @@ from bedrock_model import invoke_qwen
 # ---------------------------------------------------------------------------
 
 _REFLECTION_SYSTEM = """\
-You are a senior detective reviewing a case debrief. Be concise, specific, and actionable.
-Write lessons that a detective could apply immediately in the next case.
+You are a senior detective reviewing a FAKE INSTAGRAM ACCOUNT detection case debrief.
+This environment detects coordinated fake social media accounts — NOT financial fraud.
+
+Signals available in this environment (use ONLY these):
+  • comment_repeat_score > 0.6  → copy-paste spam comments (gang: 0.6-0.9, real: 0.0-0.08)
+  • shared_ip_count > 5         → shares IP subnet (all 10 gang members have count=9)
+  • photo_reuse_score > 0.5     → stolen profile photos
+  • bio_template_score > 0.4    → copy-paste bio text
+  • fake_risk_score > 0.75      → high-confidence gang member (composite score)
+  • hub_legitimacy_score > 0.70 → celebrity account, do NOT flag
+  • After FLAG: visible neighbors auto-become SUSPECT (priority targets)
+
+Available actions: INSPECT (1 step, reveals profile), INVESTIGATE_NETWORK (2 steps, 2-hop expand),
+FLAG, UNFLAG, SUBMIT.
+
+CRITICAL: Write lessons about fake social media signals and INSPECT/INVESTIGATE_NETWORK strategy
+ONLY. Do NOT mention transactions, financial transfers, banking, or any concepts not listed above.
 Output only the lesson text — no headers, no bullet points, just 2-3 plain sentences.\
 """
 
@@ -52,18 +67,25 @@ def generate_reflection(
         log_preview += f"\n  … [{len(action_log) - 20} more steps]"
 
     prompt = f"""\
-CASE DEBRIEF — Episode {episode_num}
+FAKE INSTAGRAM ACCOUNT DETECTION — Episode {episode_num}
 Task difficulty: {task.upper()}
 Outcome: {outcome}
 Steps used: {steps_used}/{max_steps}
 Result: {final_message}
 
+AVAILABLE SIGNALS (reference for your lesson):
+  comment_repeat_score > 0.6 | shared_ip_count > 5 | photo_reuse_score > 0.5
+  fake_risk_score > 0.75 | hub_legitimacy_score > 0.70 (celebrity, skip)
+  After FLAG → neighbors become SUSPECT (inspect them immediately)
+  INVESTIGATE_NETWORK on a flagged account reveals their 2-hop gang cluster
+
 INVESTIGATION LOG:
 {log_preview}
 
 Write a 2-3 sentence lesson for your future self based on this case.
-Focus on: which signals were most diagnostic, what strategy worked or failed,
-and how to better allocate the step budget. Be concrete and actionable.\
+Focus on: which of the above signals were most diagnostic, whether using
+INVESTIGATE_NETWORK after the first FLAG would have helped, and how to
+better allocate the step budget. Be concrete and actionable.\
 """
 
     try:

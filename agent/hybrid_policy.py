@@ -3,7 +3,7 @@
 Blends a deterministic rule-based agent with the LLM (Qwen3) agent
 using a dynamic trust weight α ∈ [0.20, 1.00]:
 
-    α = 0.20 + 0.80 * recent_win_rate * reflection_factor
+    α = 0.20 + reflection_factor × (0.80 × recent_win_rate + 0.12)
 
 Action selection when LLM and rules DISAGREE:
     • rules win  if rule_confidence >= α   (α low → rules trusted more)
@@ -110,14 +110,32 @@ def get_rule_action(obs: FakeGangObservation) -> Tuple[FakeGangAction, float]:
             confidence = min(0.88, 0.60 + (bootstrap_raw - _BOOTSTRAP_RAW_THRESHOLD) * 0.80)
             return FakeGangAction(action_type=ActionType.FLAG, account_id=p.account_id), confidence
 
-    # Priority 4 — SUBMIT if fully confident (10 flagged or almost out of steps)
+    # Priority 4 — INVESTIGATE_NETWORK to jump into the gang cluster
+    # Fires when: we have a flagged gang member but the visible frontier is still
+    # small (the graph hasn't been expanded via 2-hop yet).
+    # Each INVESTIGATE_NETWORK reveals ~30-80 new IDs including other gang members
+    # who mutually follow the flagged account — dramatically expanding recall.
+    #
+    # Visible-threshold is task-scaled: once visible_ids exceeds the threshold we've
+    # already expanded enough and normal INSPECT/cascade handles the rest.
+    _INVESTIGATE_THRESHOLD = {"easy": 40, "medium": 80, "hard": 150}
+    if obs.flagged_ids and obs.steps_remaining > 5 and len(obs.flagged_ids) < 8:
+        threshold = _INVESTIGATE_THRESHOLD.get(obs.task, 80)
+        if len(obs.visible_account_ids) < threshold:
+            target = obs.flagged_ids[-1]   # most recently flagged — freshest gang link
+            return (
+                FakeGangAction(action_type=ActionType.INVESTIGATE_NETWORK, account_id=target),
+                0.87,
+            )
+
+    # Priority 5 — SUBMIT if fully confident (10 flagged or almost out of steps)
     if len(obs.flagged_ids) >= 10:
         return FakeGangAction(action_type=ActionType.SUBMIT), 0.85
 
     if obs.steps_remaining <= 3:
         return FakeGangAction(action_type=ActionType.SUBMIT), 0.90
 
-    # Priority 5 — INSPECT the highest-risk uninspected account (exploratory)
+    # Priority 6 — INSPECT the highest-risk uninspected account (exploratory)
     uninspected = [i for i in obs.visible_account_ids if i not in obs.inspected_ids]
     if uninspected:
         # Sort uninspected: SUSPECT status first, then by whatever we know
@@ -136,19 +154,24 @@ def get_rule_action(obs: FakeGangObservation) -> Tuple[FakeGangAction, float]:
 def compute_alpha(recent_win_rate: float, n_reflections: int) -> float:
     """Compute α (LLM trust weight) from recent performance.
 
-    α = 0.20 + 0.80 * win_rate * reflection_factor
+    α = 0.20 + reflection_factor × (0.80 × win_rate + 0.12)
 
     reflection_factor ramps from 0 → 1 as reflections accumulate (0–4).
-    The LLM needs at least ~2 reflections before getting meaningful trust above 0.20.
+    A reflection bonus of +0.12 × reflection_factor ensures α rises above 0.30
+    even with 0% wins after ≥4 reflections. This breaks the chicken-and-egg
+    deadlock on medium/hard: without any wins, α was stuck at 0.20 forever,
+    meaning the LLM never took exploratory INSPECT steps and could never
+    accumulate wins to push α higher.
 
-    Examples:
-        0 wins,    0 reflections → α = 0.20
-        50% wins,  2 reflections → α = 0.50
-        80% wins,  4 reflections → α = 0.71
+    With the bonus:
+        0 wins,  0 reflections → α = 0.20  (no data yet, rules lead)
+        0 wins,  4 reflections → α = 0.32  (LLM takes exploratory INSPECTs)
+        40% wins, 4 reflections → α = 0.64
+        80% wins, 4 reflections → α = 0.96
         100% wins, 4 reflections → α = 1.00
     """
     reflection_factor = min(1.0, n_reflections / 4.0)
-    raw = 0.20 + 0.80 * recent_win_rate * reflection_factor
+    raw = 0.20 + reflection_factor * (0.80 * recent_win_rate + 0.12)
     return round(max(0.20, min(1.00, raw)), 3)
 
 
