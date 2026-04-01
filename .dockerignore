@@ -1,0 +1,21 @@
+# Exclude large generated data — episodes are generated at container startup
+episodes/
+
+# Do NOT exclude wheels/ — needed for offline pip install
+
+# Python cache
+__pycache__/
+**/__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Agent memory and run logs (mounted as volumes)
+memory/
+runs/
+
+# Dev/IDE
+.env
+.git/
+.gitignore
+*.md

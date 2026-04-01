@@ -1,0 +1,19 @@
+name: fake_gang_env
+version: "1.0.0"
+description: >
+  RL environment for detecting coordinated fake Instagram account gangs.
+  An AI detective agent must identify all 10 members of a fake gang at once
+  before they evade detection. Three difficulty levels: easy, medium, hard.
+author: OpenENV Hackathon
+tags:
+  - social-network
+  - fraud-detection
+  - graph
+  - rl
+server:
+  dockerfile: server/Dockerfile
+  port: 8000
+environment_variables:
+  WORKERS: "1"
+  PORT: "8000"
+  HOST: "0.0.0.0"
