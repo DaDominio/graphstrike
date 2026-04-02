@@ -221,6 +221,17 @@ class FakeGangEnvironment(_OpenEnvBase):
                     self._visible_ids.append(n2)
                     new_ids.add(n2)
 
+        # Re-cascade SUSPECT to newly visible neighbors of ALL already-flagged accounts.
+        # This is critical: FLAG sets SUSPECT only on currently-visible neighbors at flag time.
+        # INVESTIGATE_NETWORK adds new IDs to visible, but without this re-cascade they
+        # remain "normal" and never get prioritized for inspection — completely defeating
+        # the purpose of the network expansion.
+        for flagged_id in self._flagged:
+            for neighbor in self._live_edges.get(flagged_id, []):
+                if (neighbor in self._visible_ids
+                        and self._account_statuses.get(neighbor, "normal") == "normal"):
+                    self._account_statuses[neighbor] = "suspect"
+
         if self._step_count >= self._max_steps:
             return self._do_submit(forced=True)
 

@@ -110,19 +110,31 @@ def get_rule_action(obs: FakeGangObservation) -> Tuple[FakeGangAction, float]:
             confidence = min(0.88, 0.60 + (bootstrap_raw - _BOOTSTRAP_RAW_THRESHOLD) * 0.80)
             return FakeGangAction(action_type=ActionType.FLAG, account_id=p.account_id), confidence
 
-    # Priority 4 — INVESTIGATE_NETWORK to jump into the gang cluster
-    # Fires when: we have a flagged gang member but the visible frontier is still
-    # small (the graph hasn't been expanded via 2-hop yet).
-    # Each INVESTIGATE_NETWORK reveals ~30-80 new IDs including other gang members
-    # who mutually follow the flagged account — dramatically expanding recall.
+    # Priority 4 — INVESTIGATE_NETWORK to chain through the gang cluster.
     #
-    # Visible-threshold is task-scaled: once visible_ids exceeds the threshold we've
-    # already expanded enough and normal INSPECT/cascade handles the rest.
-    _INVESTIGATE_THRESHOLD = {"easy": 40, "medium": 80, "hard": 150}
-    if obs.flagged_ids and obs.steps_remaining > 5 and len(obs.flagged_ids) < 8:
-        threshold = _INVESTIGATE_THRESHOLD.get(obs.task, 80)
-        if len(obs.visible_account_ids) < threshold:
-            target = obs.flagged_ids[-1]   # most recently flagged — freshest gang link
+    # The problem: FLAG only cascades SUSPECT to already-visible neighbors. Gang members
+    # follow each other but aren't visible until we expand the graph. INVESTIGATE_NETWORK
+    # (2-hop expansion) + the environment's re-cascade makes them SUSPECT immediately,
+    # so Priority 2 picks them up in the next step.
+    #
+    # How many investigations have we done this episode?
+    # Each INVESTIGATE_NETWORK on an already-inspected account: +2 steps, +0 inspected_ids.
+    # Each INSPECT: +1 step, +1 inspected_ids.
+    # So: n_investigate ≈ (steps_used - len(inspected_ids)) // 2
+    # This self-throttles: fires once per newly flagged account (one investigation per flag).
+    #
+    # Max investigations per episode is task-capped to protect the step budget:
+    #   easy=1 (30 step budget, intra-gang density 0.80 → one expand covers all)
+    #   medium=2 (50 steps, density 0.70 + evasion)
+    #   hard=3  (80 steps, density 0.60 + heavy evasion)
+    _max_investigate = {"easy": 1, "medium": 2, "hard": 3}
+    _max_steps_map = {"easy": 30, "medium": 50, "hard": 80}
+    if obs.flagged_ids and obs.steps_remaining > 4:
+        _steps_used = _max_steps_map.get(obs.task, 50) - obs.steps_remaining
+        _n_inv = max(0, (_steps_used - len(obs.inspected_ids)) // 2)
+        _n_max = _max_investigate.get(obs.task, 2)
+        if _n_inv < min(_n_max, len(obs.flagged_ids)):
+            target = obs.flagged_ids[_n_inv]  # cycle: 1st flag → 1st investigate, etc.
             return (
                 FakeGangAction(action_type=ActionType.INVESTIGATE_NETWORK, account_id=target),
                 0.87,
