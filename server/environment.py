@@ -51,6 +51,7 @@ class FakeGangEnvironment(_OpenEnvBase):
         self._ep: Dict[str, Any] = {}
         self._accounts: Dict[str, Dict[str, Any]] = {}   # id -> account dict
         self._live_edges: Dict[str, List[str]] = {}       # id -> follows (mutable, affected by evasion)
+        self._reverse_edges: Dict[str, List[str]] = {}    # id -> who follows this id (kept in sync)
         self._gang_ids: List[str] = []
         self._inspected: List[str] = []
         self._flagged: List[str] = []
@@ -108,6 +109,12 @@ class FakeGangEnvironment(_OpenEnvBase):
             a["id"]: list(a["true_edges"]["follows"])
             for a in ep["network"]["accounts"]
         }
+
+        # Build reverse index: who follows each account (kept in sync with _live_edges)
+        self._reverse_edges = {}
+        for follower, targets in self._live_edges.items():
+            for target in targets:
+                self._reverse_edges.setdefault(target, []).append(follower)
 
         # Initial visible IDs (not yet profiled)
         self._visible_ids = list(ep["starting_visible"])
@@ -209,28 +216,66 @@ class FakeGangEnvironment(_OpenEnvBase):
         if acc_id not in self._visible_ids:
             self._visible_ids.append(acc_id)
 
-        # Reveal neighbors AND their neighbors (2-hop IDs only, no profiles)
-        hop1 = self._live_edges.get(acc_id, [])
+        # Reveal neighbors AND their neighbors (2-hop), traversing BOTH follow directions.
+        # Unidirectional (outgoing-only) expansion misses gang members who follow the target
+        # but aren't followed back — with density=0.70 this leaves ~30% unreachable per hop.
         new_ids = set()
-        for n in hop1:
-            if n not in self._visible_ids:
-                self._visible_ids.append(n)
-                new_ids.add(n)
-            for n2 in self._live_edges.get(n, []):
-                if n2 not in self._visible_ids:
-                    self._visible_ids.append(n2)
-                    new_ids.add(n2)
 
-        # Re-cascade SUSPECT to newly visible neighbors of ALL already-flagged accounts.
-        # This is critical: FLAG sets SUSPECT only on currently-visible neighbors at flag time.
-        # INVESTIGATE_NETWORK adds new IDs to visible, but without this re-cascade they
-        # remain "normal" and never get prioritized for inspection — completely defeating
-        # the purpose of the network expansion.
+        def _add_visible(nid: str) -> None:
+            if nid not in self._visible_ids:
+                self._visible_ids.append(nid)
+                new_ids.add(nid)
+
+        # Outgoing: accounts that acc_id follows
+        for n in self._live_edges.get(acc_id, []):
+            _add_visible(n)
+            for n2 in self._live_edges.get(n, []):
+                _add_visible(n2)
+            for n2 in self._reverse_edges.get(n, []):
+                _add_visible(n2)
+
+        # Incoming: accounts that follow acc_id (reverse edges)
+        for n in self._reverse_edges.get(acc_id, []):
+            _add_visible(n)
+            for n2 in self._live_edges.get(n, []):
+                _add_visible(n2)
+            for n2 in self._reverse_edges.get(n, []):
+                _add_visible(n2)
+
+        # Re-cascade SUSPECT to newly visible accounts using two complementary signals:
+        #
+        # Signal 1 — follow-graph: newly visible accounts that a flagged account follows.
+        # Survives post-evasion because it re-checks live_edges (already updated by evasion).
         for flagged_id in self._flagged:
             for neighbor in self._live_edges.get(flagged_id, []):
                 if (neighbor in self._visible_ids
                         and self._account_statuses.get(neighbor, "normal") == "normal"):
                     self._account_statuses[neighbor] = "suspect"
+        #
+        # Signal 2 — IP cluster: newly revealed accounts sharing the same IP subnet as any
+        # flagged account. This catches gang members connected via incoming follow edges that
+        # evasion may have removed from live_edges. Zero false positives (gang: shared IP;
+        # real/decoy: unique IP per account).
+        flagged_ips = {
+            self._accounts[fid]["features"].get("ip_cluster_id")
+            for fid in self._flagged
+            if fid in self._accounts
+        }
+        flagged_ips.discard(None)
+        for new_id in new_ids:
+            if new_id not in self._flagged and self._account_statuses.get(new_id, "normal") == "normal":
+                vid_ip = self._accounts.get(new_id, {}).get("features", {}).get("ip_cluster_id")
+                if vid_ip in flagged_ips:
+                    self._account_statuses[new_id] = "suspect"
+
+        # Refresh profiles for already-inspected accounts whose status changed so that
+        # Priority 3 in the rule engine sees updated fake_risk (not stale pre-cascade values).
+        for inspected_id in list(self._inspected):
+            new_status = self._account_statuses.get(inspected_id, "normal")
+            if new_status != "normal" and inspected_id in self._profiled:
+                cached_status = self._profiled[inspected_id].status.value
+                if cached_status != new_status:
+                    self._profiled[inspected_id] = self._build_profile(inspected_id)
 
         if self._step_count >= self._max_steps:
             return self._do_submit(forced=True)
@@ -245,13 +290,25 @@ class FakeGangEnvironment(_OpenEnvBase):
         if acc_id not in self._flagged:
             self._flagged.append(acc_id)
             self._account_statuses[acc_id] = "confirmed_fake"
-            # Cascade SUSPECT to visible neighbors that haven't been escalated yet
+            # Cascade 1 — follow-graph: mark accounts that acc_id follows as SUSPECT.
+            # Gang members follow each other (density 0.70+), so this is high-precision.
             for neighbor in self._live_edges.get(acc_id, []):
                 if (neighbor in self._visible_ids
                         and self._account_statuses.get(neighbor, "normal") == "normal"):
                     self._account_statuses[neighbor] = "suspect"
-            # Refresh graph features for already-inspected accounts whose
-            # flagged_neighbor_count just changed (those that follow acc_id).
+            # Cascade 2 — IP cluster: any visible account sharing the same IP subnet is
+            # a gang cohort. Gang: shared_ip_count=9, ip_cluster_id="ip_gang_<seed>".
+            # Real/decoy: unique ip_cluster_id. Zero false positives.
+            flagged_ip = self._accounts[acc_id]["features"].get("ip_cluster_id")
+            if flagged_ip:
+                for vid in self._visible_ids:
+                    if (vid not in self._flagged
+                            and self._account_statuses.get(vid, "normal") == "normal"):
+                        vid_ip = self._accounts.get(vid, {}).get("features", {}).get("ip_cluster_id")
+                        if vid_ip == flagged_ip:
+                            self._account_statuses[vid] = "suspect"
+            # Refresh profiles for already-inspected accounts that FOLLOW acc_id,
+            # because their flagged_neighbor_count just increased (risk score changes).
             for inspected_id in self._inspected:
                 if acc_id in self._live_edges.get(inspected_id, []):
                     self._profiled[inspected_id] = self._build_profile(inspected_id)
@@ -339,10 +396,14 @@ class FakeGangEnvironment(_OpenEnvBase):
             gang_set = set(self._gang_ids)
             for g in self._gang_ids:
                 follows = self._live_edges.get(g, [])
-                self._live_edges[g] = [
-                    f for f in follows
-                    if f not in gang_set or rng.random() > drop_rate
-                ]
+                kept = [f for f in follows if f not in gang_set or rng.random() > drop_rate]
+                dropped = set(follows) - set(kept)
+                self._live_edges[g] = kept
+                # Keep reverse_edges in sync: remove dropped edges
+                for target in dropped:
+                    rev = self._reverse_edges.get(target, [])
+                    if g in rev:
+                        rev.remove(g)
 
         rename_count = event.get("rename_count", 0)
         if rename_count > 0:
@@ -488,8 +549,16 @@ class FakeGangEnvironment(_OpenEnvBase):
             message=message,
             suspect_ids=[
                 sid for sid in self._visible_ids
-                if self._account_statuses.get(sid, "normal") == "suspect"
-                and sid not in self._flagged
+                if sid not in self._flagged
+                and (
+                    self._account_statuses.get(sid, "normal") == "suspect"
+                    # IP cluster abuse is visible without INSPECT: gang members always
+                    # have shared_ip_count = gang_size - 1 = 9 (threshold >= 5).
+                    # Real/decoy accounts always have shared_ip_count = 0.
+                    # This lets the cascade-less rule engine still find gang members
+                    # the moment they enter visible_ids (critical for hard task).
+                    or self._accounts.get(sid, {}).get("features", {}).get("shared_ip_count", 0) >= 5
+                )
             ],
         )
 

@@ -150,9 +150,14 @@ def get_rule_action(obs: FakeGangObservation) -> Tuple[FakeGangAction, float]:
     # Priority 6 — INSPECT the highest-risk uninspected account (exploratory)
     uninspected = [i for i in obs.visible_account_ids if i not in obs.inspected_ids]
     if uninspected:
-        # Sort uninspected: SUSPECT status first, then by whatever we know
+        # Sort by SUSPECT status first, then by insertion order (stable sort).
+        # Insertion order = the order accounts entered visible_account_ids:
+        # starting_visible accounts come first (added at reset), then accounts
+        # revealed by subsequent INSPECTs. This prevents low-ID real accounts
+        # from perpetually cutting ahead of gang members that appear early in
+        # starting_visible (critical for hard task with 1000-account networks).
         suspects_set = set(obs.suspect_ids)
-        uninspected.sort(key=lambda i: (i not in suspects_set, i))
+        uninspected.sort(key=lambda i: (i not in suspects_set,))  # stable → preserves insertion order
         return FakeGangAction(action_type=ActionType.INSPECT, account_id=uninspected[0]), 0.30
 
     # Fallback
