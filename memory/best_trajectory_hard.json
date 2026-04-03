@@ -1,0 +1,32 @@
+{
+  "task": "hard",
+  "episode": 3,
+  "reward": 18.84,
+  "action_log": [
+    "INSPECT acc_0672",
+    "INSPECT acc_0544",
+    "INSPECT acc_0696",
+    "INSPECT acc_0541",
+    "INSPECT acc_0659",
+    "INSPECT acc_0290",
+    "INSPECT acc_0112",
+    "INSPECT acc_0793",
+    "INSPECT acc_0339",
+    "INSPECT acc_0214",
+    "FLAG acc_0659",
+    "FLAG acc_0793",
+    "FLAG acc_0112",
+    "FLAG acc_0339",
+    "FLAG acc_0290",
+    "FLAG acc_0544",
+    "FLAG acc_0696",
+    "FLAG acc_0214",
+    "FLAG acc_0541",
+    "FLAG acc_0672",
+    "INVESTIGATE_NETWORK acc_0659",
+    "INVESTIGATE_NETWORK acc_0793",
+    "INVESTIGATE_NETWORK acc_0112",
+    "SUBMIT"
+  ],
+  "final_message": "[WIN] TP=10 FP=0 FN=0 Recall=1.00 Precision=1.00 Episode reward=18.84"
+}

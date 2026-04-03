@@ -1,0 +1,30 @@
+{
+  "task": "easy",
+  "episode": 1,
+  "reward": 18.88,
+  "action_log": [
+    "INSPECT acc_0043",
+    "INSPECT acc_0036",
+    "INSPECT acc_0001",
+    "INSPECT acc_0014",
+    "INSPECT acc_0012",
+    "INSPECT acc_0000",
+    "INSPECT acc_0027",
+    "INSPECT acc_0047",
+    "INSPECT acc_0007",
+    "INSPECT acc_0028",
+    "FLAG acc_0001",
+    "FLAG acc_0027",
+    "FLAG acc_0047",
+    "FLAG acc_0014",
+    "FLAG acc_0007",
+    "FLAG acc_0043",
+    "FLAG acc_0000",
+    "FLAG acc_0012",
+    "FLAG acc_0036",
+    "FLAG acc_0028",
+    "INVESTIGATE_NETWORK acc_0001",
+    "SUBMIT"
+  ],
+  "final_message": "[WIN] TP=10 FP=0 FN=0 Recall=1.00 Precision=1.00 Episode reward=18.88"
+}
