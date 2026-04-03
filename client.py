@@ -121,6 +121,7 @@ class FakeGangEnvClient:
             evasion_count=obs_data.get("evasion_count", 0),
             task=obs_data.get("task", "easy"),
             message=obs_data.get("message", ""),
+            suspect_ids=obs_data.get("suspect_ids", []),
         )
         return StepResult(
             observation=obs,
