@@ -28,8 +28,8 @@ try:
 except ImportError:
     _using_sdk = False
     app = FastAPI(
-        title="Fake Gang Detection — OpenEnv",
-        description="RL environment for detecting coordinated fake Instagram account gangs.",
+        title="GraphStrike — OpenEnv",
+        description="RL environment for detecting coordinated fake account rings in social networks.",
         version="1.0.0",
     )
 

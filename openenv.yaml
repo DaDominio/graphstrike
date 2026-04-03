@@ -1,4 +1,4 @@
-name: fake_gang_env
+name: graphstrike
 version: "1.0.0"
 description: >
   RL environment for detecting coordinated fake Instagram account gangs.

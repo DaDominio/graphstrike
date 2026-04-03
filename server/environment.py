@@ -84,6 +84,9 @@ class FakeGangEnvironment(_OpenEnvBase):
         self._step_count = 0
         self._evasion_count = 0
         self._evasion_triggered = False
+        # Clear evasion-fired flags from previous episodes
+        for attr in [a for a in vars(self) if a.startswith('_fired_')]:
+            delattr(self, attr)
         self._inspected = []
         self._flagged = []
         self._profiled = {}
@@ -550,15 +553,7 @@ class FakeGangEnvironment(_OpenEnvBase):
             suspect_ids=[
                 sid for sid in self._visible_ids
                 if sid not in self._flagged
-                and (
-                    self._account_statuses.get(sid, "normal") == "suspect"
-                    # IP cluster abuse is visible without INSPECT: gang members always
-                    # have shared_ip_count = gang_size - 1 = 9 (threshold >= 5).
-                    # Real/decoy accounts always have shared_ip_count = 0.
-                    # This lets the cascade-less rule engine still find gang members
-                    # the moment they enter visible_ids (critical for hard task).
-                    or self._accounts.get(sid, {}).get("features", {}).get("shared_ip_count", 0) >= 5
-                )
+                and self._account_statuses.get(sid, "normal") == "suspect"
             ],
         )
 
