@@ -168,7 +168,7 @@ def get_rule_action(obs: FakeGangObservation) -> Tuple[FakeGangAction, float]:
 # Alpha computation
 # ---------------------------------------------------------------------------
 
-def compute_alpha(recent_win_rate: float, n_reflections: int) -> float:
+def compute_alpha(recent_win_rate: float, n_reflections: int, task: str = "easy") -> float:
     """Compute α (LLM trust weight) from recent performance.
 
     α = 0.20 + reflection_factor × (0.80 × win_rate + 0.12)
@@ -180,16 +180,16 @@ def compute_alpha(recent_win_rate: float, n_reflections: int) -> float:
     meaning the LLM never took exploratory INSPECT steps and could never
     accumulate wins to push α higher.
 
-    With the bonus:
-        0 wins,  0 reflections → α = 0.20  (no data yet, rules lead)
-        0 wins,  4 reflections → α = 0.32  (LLM takes exploratory INSPECTs)
-        40% wins, 4 reflections → α = 0.64
-        80% wins, 4 reflections → α = 0.96
-        100% wins, 4 reflections → α = 1.00
+    Per-task caps prevent α from climbing so high that the LLM overrides
+    correct rule-engine decisions (Priority 2 suspect conf=0.95, FLAG conf=0.90).
     """
+    # Per-task α ceiling: rule engine keeps authority on high-confidence actions
+    _alpha_cap = {"easy": 0.50, "medium": 0.70, "hard": 0.85}
+    cap = _alpha_cap.get(task, 0.70)
+
     reflection_factor = min(1.0, n_reflections / 4.0)
     raw = 0.20 + reflection_factor * (0.80 * recent_win_rate + 0.12)
-    return round(max(0.20, min(1.00, raw)), 3)
+    return round(max(0.20, min(cap, raw)), 3)
 
 
 # ---------------------------------------------------------------------------

@@ -333,7 +333,7 @@ def train(
             # Load persisted α and update with latest win rate + reflection count
             n_refs = memory.reflection_count(current_task)
             wr = memory.recent_win_rate(current_task, n=10)
-            alpha = compute_alpha(recent_win_rate=wr, n_reflections=n_refs)
+            alpha = compute_alpha(recent_win_rate=wr, n_reflections=n_refs, task=current_task)
 
             # --- Run episode ---
             metrics = run_episode(
@@ -351,7 +351,7 @@ def train(
             memory.record_win(current_task, metrics["won"], ep + 1)
             # Recompute with the just-added result for next episode's alpha
             new_wr = memory.recent_win_rate(current_task, n=10)
-            new_alpha = compute_alpha(recent_win_rate=new_wr, n_reflections=n_refs)
+            new_alpha = compute_alpha(recent_win_rate=new_wr, n_reflections=n_refs, task=current_task)
             memory.save_alpha(current_task, new_alpha)
 
             # --- Learning step ---
