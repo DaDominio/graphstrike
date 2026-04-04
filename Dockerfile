@@ -1,5 +1,5 @@
-# ── Fake Gang Detection — OpenEnv Environment Server ─────────────────────────
-# This Dockerfile runs ONLY the environment server (FastAPI + episodes).
+# ── GraphStrike — OpenEnv Environment Server ─────────────────────────────────
+# This Dockerfile runs the environment server (FastAPI + Gradio UI + episodes).
 # No training loop, no AWS credentials required.
 #
 # Used by:  openenv push / HuggingFace Spaces deployment
@@ -18,7 +18,10 @@ RUN pip install --no-cache-dir \
     fastapi \
     "uvicorn[standard]" \
     "pydantic>=2.6.0" \
-    requests
+    requests \
+    "openenv-core>=0.2.0" \
+    "gradio>=4.0.0" \
+    "openai>=1.0.0"
 
 # ── Copy source code ──────────────────────────────────────────────────────────
 COPY . .

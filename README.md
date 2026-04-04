@@ -1,5 +1,5 @@
 ---
-title: Fake Gang Detection OpenEnv
+title: GraphStrike
 emoji: 🕵️
 colorFrom: blue
 colorTo: indigo
@@ -15,12 +15,15 @@ tags:
   - llm-agent
 ---
 
-# Fake Gang Detection — OpenEnv RL Environment
+# GraphStrike : Coordinated Fake Account Ring Detection
 
-An OpenEnv-compatible reinforcement learning environment where an LLM detective
-must identify all 10 members of a coordinated fake Instagram account gang hidden
+> **OpenEnv Hackathon × SCALER School of Technology**
+> Live deployment: [huggingface.co/spaces/Pandago/graphstrike](https://huggingface.co/spaces/Pandago/graphstrike)
+
+An OpenEnv-compatible reinforcement learning environment where an LLM agent
+must identify all 10 members of a coordinated fake account ring hidden
 inside a synthetic social network. The agent learns via **Reflexion** and a
-**dynamic hybrid rule/LLM policy** — no gradient updates, no fine-tuning.
+**dynamic hybrid rule/LLM policy** , not via gradient updates or fine-tuning.
 
 ---
 
@@ -51,8 +54,8 @@ This is an **OpenEnv hackathon** submission. OpenEnv is a framework for building
 reinforcement learning environments with a standard microservice interface
 (`/reset`, `/step`, `/state`) so that any agent implementation can plug in.
 
-**The task:** A social network contains 1000 fake accounts organised into a
-single "gang" of 10. The gang behaves in a coordinated way — same posting hour,
+**The task:** A social network contains fake accounts organised into a
+single coordinated ring of 10. The ring behaves in a coordinated way — same posting hour,
 same IP subnet, stolen celebrity photos, copy-paste bios. The agent must find
 all 10 by navigating a limited step budget, inspecting accounts, and flagging suspects.
 
@@ -286,7 +289,9 @@ members are much more tightly interconnected than real users.
 
 ```
 NORMAL          → no signal or formula risk < 0.35
-SUSPECT         → auto-elevated: a flagged neighbor follows this account
+SUSPECT         → auto-elevated via dual cascade:
+                  (1) a flagged account follows this account, OR
+                  (2) this account shares ip_cluster_id with a flagged account
 CONFIRMED_FAKE  → agent explicitly flagged this account
 ```
 
@@ -392,17 +397,28 @@ step(action)  [called repeatedly]
 **INVESTIGATE_NETWORK (2 steps):**
 
 1. Adds account to `_inspected` (counts it as seen)
-2. Reveals 1-hop neighbors AND their 1-hop neighbors (2-hop total)
+2. **Bidirectional 2-hop expansion:** Traverses both `_live_edges` (outgoing follows)
+   AND `_reverse_edges` (incoming followers) for the target and each 1-hop neighbor.
+   This means the expansion covers:
+   - Outgoing: `acc → follows → their follows` AND `acc → follows → their followers`
+   - Incoming: `acc ← followers → their follows` AND `acc ← followers ← their followers`
 3. Adds all new account IDs to `_visible_ids` (no full profiles — IDs only)
-4. Cost: 2 steps, -0.02 score. Returns count of newly discovered IDs.
+4. **Re-cascades SUSPECT** to newly visible accounts via two signals:
+   - *Follow-graph cascade:* any newly visible account followed by a flagged account → SUSPECT
+   - *IP cluster cascade:* any newly visible account sharing `ip_cluster_id` with a flagged account → SUSPECT (zero false positives — gang shares one IP; real accounts have unique IPs)
+5. Cost: 2 steps, -0.02 score. Returns count of newly discovered IDs.
 
 **FLAG (free):**
 
 1. Adds account to `_flagged`
 2. Sets `_account_statuses[acc_id] = "confirmed_fake"`
-3. **CASCADE:** For every neighbor in `_live_edges[acc_id]`:
-   - If the neighbor is in `_visible_ids` AND currently `"normal"`:
-   - Set `_account_statuses[neighbor] = "suspect"`
+3. **Dual cascade** to SUSPECT:
+   - *Cascade 1 — Follow-graph:* For every neighbor in `_live_edges[acc_id]`
+     (accounts the flagged user follows), if the neighbor is visible and NORMAL → SUSPECT.
+     Gang members follow each other at density 0.70+, so this is high-precision.
+   - *Cascade 2 — IP cluster:* Any visible account sharing the same `ip_cluster_id`
+     as the flagged account → SUSPECT. Gang members all share `ip_gang_{seed}`;
+     real and decoy accounts each have a unique IP cluster. Zero false positives.
 4. Refreshes all already-inspected accounts that follow `acc_id`
    (their `flagged_neighbor_count` just increased, so risk scores change)
 
@@ -713,8 +729,12 @@ else:
 **When FLAG(X) is called:**
 
 1. X → CONFIRMED_FAKE
-2. For every account Y in X's follow list:
-   - If Y is visible AND Y is NORMAL: Y → SUSPECT
+2. **Dual SUSPECT cascade:**
+   - *Follow-graph:* For every account Y that X follows (`_live_edges[X]`):
+     if Y is visible AND Y is NORMAL → Y becomes SUSPECT
+   - *IP cluster:* For every visible account Z sharing X's `ip_cluster_id`:
+     if Z is not flagged AND Z is NORMAL → Z becomes SUSPECT
+     (gang members share `ip_gang_{seed}`; real accounts have unique IPs → zero false positives)
 3. All already-inspected accounts that follow X are re-profiled
    (their `flagged_neighbor_count` increases, which raises their `fake_risk_score`)
 
@@ -985,33 +1005,45 @@ The LLM, given enough reflections, learns these nuances.
 
 ### 11.3 Alpha: The Trust Weight
 
-α (alpha) is a per-task value in [0.20, 1.00] representing the agent's current
+α (alpha) is a per-task value in [0.20, cap] representing the agent's current
 trust in the LLM:
 
 ```
-α = 0.20 + 0.80 × recent_win_rate × reflection_factor
+reflection_factor = min(1.0, n_reflections / 4.0)
+raw = 0.20 + reflection_factor × (0.80 × recent_win_rate + 0.12)
+α = clamp(raw, 0.20, cap)
 
 where:
   recent_win_rate = wins in last 10 episodes for this task
   reflection_factor = min(1.0, n_reflections / 4.0)
 ```
 
+**Per-task alpha caps** prevent α from climbing so high that the LLM overrides
+correct high-confidence rule-engine decisions (e.g., Priority 2 INSPECT SUSPECT
+at confidence=0.95):
+
+| Task   | α cap | Rationale                                                          |
+| ------ | ------ | ------------------------------------------------------------------ |
+| easy   | 0.50   | Rule engine alone achieves ~91% — LLM should assist, not override |
+| medium | 0.70   | Decoys require some LLM judgment, but cascade must stay            |
+| hard   | 0.85   | LLM needs latitude for evasion adaptation, but safety rules remain |
+
 `reflection_factor` ensures the LLM must accumulate at least **4 reflections**
-before it can reach full trust — pure win rate is not enough, because the LLM
+before it can reach meaningful trust — pure win rate is not enough, because the LLM
 needs to have demonstrably learned from failures.
 
-**Alpha trajectory over training:**
+**Alpha trajectory over training (easy task, cap=0.50):**
 
-| Episode | Wins (last 10) | Reflections | reflection_factor | α   |
-| ------- | -------------- | ----------- | ----------------- | ---- |
-| 1       | 0/0 → wr=0%   | 0           | 0.00              | 0.20 |
-| 5       | 1/5 → wr=20%  | 4           | 1.00              | 0.36 |
-| 10      | 5/10 → wr=50% | 9           | 1.00              | 0.60 |
-| 20      | 8/10 → wr=80% | 19          | 1.00              | 0.84 |
-| 35      | 9/10 → wr=90% | 34          | 1.00              | 0.92 |
+| Episode | Wins (last 10) | Reflections | reflection_factor | raw  | α (capped)    |
+| ------- | -------------- | ----------- | ----------------- | ---- | -------------- |
+| 1       | 0/0 → wr=0%   | 0           | 0.00              | 0.20 | 0.20           |
+| 5       | 1/5 → wr=20%  | 4           | 1.00              | 0.48 | 0.48           |
+| 10      | 5/10 → wr=50% | 9           | 1.00              | 0.72 | **0.50** |
+| 20      | 8/10 → wr=80% | 19          | 1.00              | 0.96 | **0.50** |
 
-α starts at 0.20 (rules dominate) and climbs toward 1.0 as the LLM wins
-consistently and accumulates lessons.
+α starts at 0.20 (rules dominate) and climbs toward the task-specific cap as
+the LLM wins consistently and accumulates lessons. The cap ensures the rule
+engine retains veto power over high-confidence structural decisions.
 
 ### 11.4 Rule Action + Confidence
 
@@ -1076,11 +1108,12 @@ The condition `rule_conf >= alpha` creates a natural threshold system:
   - Only the two highest-confidence situations still override: forced submit
     (1.00) and uninspected suspects (0.95)
   - Everything else goes to the LLM, including direct flag decisions
-- At **α=1.00** (full trust):
+- At **α=cap** (maximum trust for the task):
 
-  - Rules never win (confidence is always < 1.00, since 1.00 only fires at
-    steps_remaining=0 which the LLM also handles)
-  - Pure LLM mode
+  - On easy (cap=0.50): rules still override for suspects (0.95), flags (0.70+),
+    and forced submits (1.00) — only exploratory INSPECTs (0.30) go to LLM
+  - On hard (cap=0.85): rules only override the highest-confidence situations
+    (suspects, forced submit); LLM controls flag and exploration decisions
 
 ### 11.6 Disagreement Examples
 
@@ -1130,9 +1163,9 @@ After every episode, `train.py` does:
 # Record outcome
 memory.record_win(task, won, episode_num)
 
-# Recompute alpha with updated win history
+# Recompute alpha with updated win history (per-task cap applied)
 new_wr = memory.recent_win_rate(task, n=10)
-new_alpha = compute_alpha(new_wr, n_reflections)
+new_alpha = compute_alpha(new_wr, n_reflections, task=current_task)
 
 # Save for next run (even if container restarts)
 memory.save_alpha(task, new_alpha)
@@ -1190,10 +1223,10 @@ for ep in range(n_episodes):
   1. DETERMINE TASK
      current_task = curriculum_task(ep) or fixed task
 
-  2. COMPUTE ALPHA
+  2. COMPUTE ALPHA (per-task cap applied)
      n_refs = memory.reflection_count(current_task)
      wr = memory.recent_win_rate(current_task, n=10)
-     alpha = 0.20 + 0.80 × wr × min(1.0, n_refs/4)
+     alpha = compute_alpha(wr, n_refs, task=current_task)  # capped per task
 
   3. LOAD CONTEXT
      reflections = memory.get_reflections(task, n=4)   # last 4 lessons
@@ -1326,7 +1359,7 @@ Returns current episode metadata:
 Returns the normalised grader score after SUBMIT. Error 400 if episode not done.
 
 ```json
-{"score": 0.871, "task": "easy", "episode_id": "uuid"}
+{"score": 0.91, "task": "easy", "episode_id": "uuid"}
 ```
 
 ### POST /baseline
@@ -1335,10 +1368,23 @@ Runs the rule-based agent on all three tasks (seed=0) and returns scores:
 
 ```json
 {
-  "scores": {"easy": 0.871, "medium": 0.743, "hard": 0.612},
+  "scores": {"easy": 0.91, "medium": 0.906, "hard": 0.9038},
   "agent": "rule_based"
 }
 ```
+
+**Baseline performance across 50 seeds:**
+
+| Task   | Seed=0 score | Win rate (50 seeds) | Mean score (50 seeds) |
+| ------ | ------------ | ------------------- | --------------------- |
+| easy   | 0.91         | 100%                | ~0.91                 |
+| medium | 0.906        | 84%                 | ~0.77                 |
+| hard   | 0.9038       | 52%                 | ~0.47                 |
+
+The baseline is a deterministic rule-based agent — no LLM, no learning. The
+difficulty scaling is designed so that easy is consistently solvable, medium
+requires some luck, and hard genuinely challenges frontier LLM agents via
+evasion events that destroy graph signals mid-investigation.
 
 ---
 
@@ -1350,7 +1396,7 @@ Runs the rule-based agent on all three tasks (seed=0) and returns scores:
 
 ```bash
 cd fake_gang_env
-docker build -f server/Dockerfile -t fake-gang-env .
+docker build -f server/Dockerfile -t graphstrike .
 ```
 
 Build takes ~10 seconds because:
@@ -1368,7 +1414,7 @@ docker run -it \
   -v $(pwd)/memory:/app/memory \
   -v $(pwd)/runs:/app/runs \
   -p 8000:8000 \
-  fake-gang-env
+  graphstrike
 ```
 
 The volumes preserve all learning between runs. When you restart the container,
@@ -1401,33 +1447,51 @@ the agent continues from where it left off (α values, reflections, best traject
 
 ## 15. Submission Requirements
 
-All three submission requirements are satisfied:
+All submission requirements are satisfied. The environment is deployed at
+[huggingface.co/spaces/Pandago/graphstrike](https://huggingface.co/spaces/Pandago/graphstrike).
 
-### 15.1 /tasks with action_schema
+### 15.1 Required Endpoints
+
+| Endpoint      | Method | Status | Description                                              |
+| ------------- | ------ | ------ | -------------------------------------------------------- |
+| `/health`   | GET    | ✅     | Returns `{"status": "healthy"}`                        |
+| `/tasks`    | GET    | ✅     | 3 tasks +`action_schema` + `score_range: [0.0, 1.0]` |
+| `/reset`    | POST   | ✅     | Accepts `{task, seed}`, returns initial observation    |
+| `/step`     | POST   | ✅     | Accepts any valid action, returns updated observation    |
+| `/state`    | GET    | ✅     | Returns episode metadata (step count, task, score)       |
+| `/grader`   | GET    | ✅     | Returns normalised [0.0, 1.0] score after SUBMIT         |
+| `/baseline` | POST   | ✅     | Runs rule-based agent on all 3 tasks, returns scores     |
+
+### 15.2 /tasks with action_schema
 
 The `/tasks` endpoint returns the `action_schema` dict listing all valid
 `action_type` values and the `account_id` field description. Graders can
 discover the full action space without reading code.
 
-### 15.2 /grader
+### 15.3 /grader — Normalised Scoring
 
 After calling `SUBMIT` (via `/step`), call `GET /grader` to retrieve the
 normalised [0.0, 1.0] grader score. Returns 400 if the episode is not yet done.
 
 The score formula (see §7.8) rewards recall, precision, and efficiency.
 Maximum score 1.0 requires finding all 10 gang members with no false positives
-and using no steps.
+and using no steps. The grader is **deterministic** — same actions produce same score.
 
-### 15.3 /baseline
+### 15.4 /baseline — Reproducible Baseline Agent
 
 `POST /baseline` imports `inference.py`'s `run_rule_based_episode` and runs it
 on all three tasks with seed=0. Returns:
 
 ```json
-{"scores": {"easy": X, "medium": Y, "hard": Z}, "agent": "rule_based"}
+{"scores": {"easy": 0.91, "medium": 0.906, "hard": 0.9038}, "agent": "rule_based"}
 ```
 
-### 15.4 inference.py
+**Reproducibility:** The baseline is fully deterministic — no randomness, no LLM calls.
+Calling `/baseline` 3+ times in succession produces **identical scores** every time.
+The evasion flags (`_fired_*` attributes) are properly cleared on `reset()`,
+ensuring episodes replay identically across runs.
+
+### 15.5 inference.py
 
 **Library mode** (used by `/baseline`):
 
@@ -1441,7 +1505,7 @@ score = run_rule_based_episode(env, task="easy", seed=0)
 
 ```bash
 python inference.py --url http://localhost:8000
-# → {"scores": {"easy": 0.87, "medium": 0.74, "hard": 0.61}, "agent": "rule_based"}
+# → {"scores": {"easy": 0.91, "medium": 0.906, "hard": 0.9038}, "agent": "rule_based"}
 ```
 
 **CLI mode** (local, no server needed):
@@ -1459,7 +1523,7 @@ The rule-based strategy:
 
 Thresholds by task: easy=0.60, medium=0.50, hard=0.45.
 
-### 15.5 validate.py
+### 15.6 validate.py — 24-Point Pre-Submission Validator
 
 Runs 24 checks split between local (no server) and HTTP:
 
@@ -1481,6 +1545,18 @@ Checks include:
 - /step supports INSPECT, FLAG, SUBMIT
 - /grader returns [0,1] float after SUBMIT
 - /baseline returns 3 valid scores
+
+**All 24/24 checks pass.**
+
+### 15.7 Judging Criteria Alignment
+
+| Criterion                    | Weight | How GraphStrike addresses it                                                                                                                                     |
+| ---------------------------- | ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Domain quality**     | 30%    | Real-world fraud detection domain; signals modelled on actual Instagram fake-account patterns (IP clustering, photo reuse, bio templates, temporal coordination) |
+| **Task & grader**      | 25%    | 3 difficulty tiers with clear win conditions; grader formula rewards recall, precision, and efficiency; partial credit for incomplete investigations             |
+| **Environment design** | 20%    | Bidirectional graph, dual cascade (follow + IP), evasion events that destroy signals mid-investigation, decoy accounts that penalise reckless flagging           |
+| **Code quality**       | 15%    | Typed Pydantic models, stateless scoring functions, 24-point validator, deterministic episode generation by seed                                                 |
+| **Creativity**         | 10%    | Hybrid rule/LLM policy with dynamic α caps, Reflexion-based learning without fine-tuning, IP cluster cascade as evasion-resistant signal                        |
 
 ---
 
@@ -1521,8 +1597,10 @@ assert len(obs.suspect_ids) > 0, 'Cascade failed'
 action, conf = get_rule_action(obs)
 assert action.account_id in obs.suspect_ids, 'Rule not prioritising suspects'
 print(f'Cascade OK: {len(obs.suspect_ids)} suspects. Rule → INSPECT {action.account_id} (conf={conf:.2f})')
-a0, a1, a2 = compute_alpha(0,0), compute_alpha(0.5,2), compute_alpha(1,4)
-print(f'Alpha: min={a0} mid={a1} max={a2}')
+a0 = compute_alpha(0, 0, 'easy')
+a1 = compute_alpha(0.5, 2, 'easy')
+a2 = compute_alpha(1.0, 4, 'easy')
+print(f'Alpha (easy, cap=0.50): min={a0} mid={a1} max={a2}')
 "
 
 # Full local validate
@@ -1538,3 +1616,44 @@ python3 validate.py --url http://localhost:8001
 ```
 
 Expected output: `Results: 24/24 passed — all OK`
+
+### Deployed Endpoint Verification
+
+The live environment at [huggingface.co/spaces/Pandago/graphstrike](https://huggingface.co/spaces/Pandago/graphstrike)
+responds to all standard OpenEnv endpoints:
+
+```bash
+# Health check
+curl https://pandago-graphstrike.hf.space/health
+# → {"status": "healthy"}
+
+# Task discovery
+curl https://pandago-graphstrike.hf.space/tasks
+# → {"tasks": ["easy","medium","hard"], "action_schema": {...}, "score_range": [0.0, 1.0]}
+
+# Baseline (deterministic, reproducible)
+curl -X POST https://pandago-graphstrike.hf.space/baseline
+# → {"scores": {"easy": 0.91, "medium": 0.906, "hard": 0.9038}, "agent": "rule_based"}
+```
+
+---
+
+
+
+![Material wave loading](https://github.com/user-attachments/assets/a08255eb-9647-471d-9881-61871332249f)
+
+## Developed with ❤️ by Team ComputeXOR
+
+
+### {
+
+### [
+    Sai Nivedh](https://github.com/SaiNivedh26) , 
+
+### [
+    Chaaruvarthan](https://github.com/Charuvarthan-T) , 
+
+### [
+    Sajeev](https://github.com/SajeevSenthil)
+
+### }

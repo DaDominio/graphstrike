@@ -10,5 +10,11 @@ botocore>=1.34.0
 # OpenEnv HTTP client
 requests>=2.31.0
 
-# OpenEnv SDK (installed separately — see Dockerfile; falls back to stubs if missing)
-# pip install openenv
+# OpenEnv SDK
+openenv-core>=0.2.0
+
+# Gradio UI (web interface on HF Spaces)
+gradio>=4.0.0
+
+# Inference script (OpenAI client for LLM calls via HF router)
+openai>=1.0.0
