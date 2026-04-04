@@ -14,16 +14,49 @@ tags:
   - openenv
   - llm-agent
 ---
-
-# GraphStrike : Coordinated Fake Account Ring Detection
-
-> **OpenEnv Hackathon × SCALER School of Technology**
-> Live deployment: [huggingface.co/spaces/Pandago/graphstrike](https://huggingface.co/spaces/Pandago/graphstrike)
+# GraphStrike : Coordinated Fake Account Network Detection
 
 An OpenEnv-compatible reinforcement learning environment where an LLM agent
-must identify all 10 members of a coordinated fake account ring hidden
+must identify all 10 members of a coordinated fake account network hidden
 inside a synthetic social network. The agent learns via **Reflexion** and a
 **dynamic hybrid rule/LLM policy** , not via gradient updates or fine-tuning.
+
+### *Deployed Endpoint Verification*
+
+The live environment at [huggingface.co/spaces/Pandago/graphstrike](https://huggingface.co/spaces/Pandago/graphstrike)
+responds to all standard OpenEnv endpoints:
+
+```bash
+# Health check
+curl https://pandago-graphstrike.hf.space/health
+# → {"status": "healthy"}
+
+# Task discovery
+curl https://pandago-graphstrike.hf.space/tasks
+# → {"tasks": ["easy","medium","hard"], "action_schema": {...}, "score_range": [0.0, 1.0]}
+
+# Baseline (deterministic, reproducible)
+curl -X POST https://pandago-graphstrike.hf.space/baseline
+# → {"scores": {"easy": 0.91, "medium": 0.906, "hard": 0.9038}, "agent": "rule_based"}
+```
+
+---
+
+We evaluate GraphStrike's hybrid rule/LLM policy across multiple frontier models
+to measure how well each model handles the investigation task. All runs use
+the same inference pipeline (`inference.py`) with identical system prompts and
+structured logging.
+
+| Model                         | Model ID                            | Easy | Medium | Hard   | Avg Score | Notes                     |
+| ----------------------------- | ----------------------------------- | ---- | ------ | ------ | --------- | ------------------------- |
+| **Qwen 2.5 72B**        | `Qwen/Qwen2.5-72B-Instruct`       | 0.91 | 0.906  | 0.9038 | 0.906     | Primary development model |
+| **NVIDIA Nemotron**     | `nvidia.nemotron-super-3-120b`    | —   | —     | —     | —        |                           |
+| **Mistral Ministral**   | `mistral.ministral-3-8b-instruct` | —   | —     | —     | —        |                           |
+| **DeepSeek V3.2**       | `deepseek.v3.2`                   | —   | —     | —     | —        |                           |
+| **Gemma 3 12B**         | `google.gemma-3-12b-it`           | —   | —     | —     | —        |                           |
+| **Rule-based baseline** | N/A (no LLM)                        | 0.91 | 0.906  | 0.9038 | 0.906     | Deterministic, seed=0     |
+
+---
 
 ---
 
@@ -44,7 +77,7 @@ inside a synthetic social network. The agent learns via **Reflexion** and a
 13. [API Reference](#13-api-reference)
 14. [Docker Deployment](#14-docker-deployment)
 15. [Submission Requirements](#15-submission-requirements)
-16. [Verification &amp; Validation](#16-verification--validation)
+16. [Verification &amp;  Validation](#17-verification--validation)
 
 ---
 
@@ -55,7 +88,7 @@ reinforcement learning environments with a standard microservice interface
 (`/reset`, `/step`, `/state`) so that any agent implementation can plug in.
 
 **The task:** A social network contains fake accounts organised into a
-single coordinated ring of 10. The ring behaves in a coordinated way — same posting hour,
+single coordinated network of 10. The network behaves in a coordinated way — same posting hour,
 same IP subnet, stolen celebrity photos, copy-paste bios. The agent must find
 all 10 by navigating a limited step budget, inspecting accounts, and flagging suspects.
 
@@ -1558,6 +1591,7 @@ Checks include:
 | **Code quality**       | 15%    | Typed Pydantic models, stateless scoring functions, 24-point validator, deterministic episode generation by seed                                                 |
 | **Creativity**         | 10%    | Hybrid rule/LLM policy with dynamic α caps, Reflexion-based learning without fine-tuning, IP cluster cascade as evasion-resistant signal                        |
 
+
 ---
 
 ## 16. Verification & Validation
@@ -1617,39 +1651,15 @@ python3 validate.py --url http://localhost:8001
 
 Expected output: `Results: 24/24 passed — all OK`
 
-### Deployed Endpoint Verification
-
-The live environment at [huggingface.co/spaces/Pandago/graphstrike](https://huggingface.co/spaces/Pandago/graphstrike)
-responds to all standard OpenEnv endpoints:
-
-```bash
-# Health check
-curl https://pandago-graphstrike.hf.space/health
-# → {"status": "healthy"}
-
-# Task discovery
-curl https://pandago-graphstrike.hf.space/tasks
-# → {"tasks": ["easy","medium","hard"], "action_schema": {...}, "score_range": [0.0, 1.0]}
-
-# Baseline (deterministic, reproducible)
-curl -X POST https://pandago-graphstrike.hf.space/baseline
-# → {"scores": {"easy": 0.91, "medium": 0.906, "hard": 0.9038}, "agent": "rule_based"}
-```
-
----
-
-
-
 ![Material wave loading](https://github.com/user-attachments/assets/a08255eb-9647-471d-9881-61871332249f)
 
 ## Developed with ❤️ by Team ComputeXOR
 
-
 ### {
 
-### [Sai Nivedh](https://github.com/SaiNivedh26) , 
+### [Sai Nivedh](https://github.com/SaiNivedh26) ,
 
-### [Chaaruvarthan](https://github.com/Charuvarthan-T) , 
+### [Chaaruvarthan](https://github.com/Charuvarthan-T) ,
 
 ### [Sajeev](https://github.com/SajeevSenthil)
 

@@ -89,6 +89,18 @@ def list_tasks():
             "account_id": "string (required for all actions except submit)",
         },
         "score_range": [0.0, 1.0],
+        "strategy_guide": (
+            "Goal: FLAG exactly 10 coordinated fake accounts hidden in the network. "
+            "1) INSPECT accounts to reveal profiles (costs 1 step). "
+            "2) Look for fake signals: shared_ip_count >= 5 (gang shares one IP), "
+            "photo_reuse_score >= 0.50, bio_template_score >= 0.40, comment_repeat_score >= 0.50. "
+            "3) FLAG suspicious accounts (FREE — costs 0 steps). "
+            "4) After FLAG, check suspect_ids in observation — these are auto-elevated neighbors, likely more gang members. "
+            "5) INSPECT suspects first (highest priority). "
+            "6) SUBMIT when you have 10 flags. "
+            "Do NOT flag accounts with hub_legitimacy_score > 0.70 (celebrities). "
+            "The observation 'message' field contains actionable HINT lines."
+        ),
     }
 
 @app.get("/grader")
