@@ -135,7 +135,7 @@ def _call_hf(prompt: str) -> str:
 
 
 def _call_bedrock(prompt: str) -> str:
-    """Call LLM via AWS Bedrock Converse API."""
+    """Call LLM via AWS Bedrock. Tries converse() first, falls back to invoke_model()."""
     import boto3
     client = boto3.client(
         service_name="bedrock-runtime",
@@ -143,13 +143,42 @@ def _call_bedrock(prompt: str) -> str:
         aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
         aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
     )
-    resp = client.converse(
+    # Try converse API first (boto3 >= 1.34.x)
+    if hasattr(client, "converse"):
+        resp = client.converse(
+            modelId=BEDROCK_MODEL_ID,
+            messages=[{"role": "user", "content": [{"text": prompt}]}],
+            system=[{"text": SYSTEM_PROMPT}],
+            inferenceConfig={"maxTokens": 256, "temperature": 0.3},
+        )
+        return resp["output"]["message"]["content"][0]["text"].strip()
+    # Fallback: invoke_model (works with all boto3 versions)
+    body = json.dumps({
+        "messages": [
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "user", "content": prompt},
+        ],
+        "max_tokens": 256,
+        "temperature": 0.3,
+    })
+    resp = client.invoke_model(
         modelId=BEDROCK_MODEL_ID,
-        messages=[{"role": "user", "content": [{"text": prompt}]}],
-        system=[{"text": SYSTEM_PROMPT}],
-        inferenceConfig={"maxTokens": 256, "temperature": 0.3},
+        contentType="application/json",
+        accept="application/json",
+        body=body,
     )
-    return resp["output"]["message"]["content"][0]["text"].strip()
+    result = json.loads(resp["body"].read())
+    # Handle both OpenAI-style and Bedrock-native response formats
+    if "choices" in result:
+        return result["choices"][0]["message"]["content"].strip()
+    if "content" in result:
+        content = result["content"]
+        if isinstance(content, list):
+            return content[0].get("text", "").strip()
+        return str(content).strip()
+    if "output" in result:
+        return result["output"].get("text", "").strip()
+    return str(result).strip()
 
 
 def call_llm(prompt: str) -> str:
