@@ -1647,13 +1647,10 @@ curl -X POST https://pandago-graphstrike.hf.space/baseline
 
 ### {
 
-### [
-    Sai Nivedh](https://github.com/SaiNivedh26) , 
+### [Sai Nivedh](https://github.com/SaiNivedh26) , 
 
-### [
-    Chaaruvarthan](https://github.com/Charuvarthan-T) , 
+### [Chaaruvarthan](https://github.com/Charuvarthan-T) , 
 
-### [
-    Sajeev](https://github.com/SajeevSenthil)
+### [Sajeev](https://github.com/SajeevSenthil)
 
 ### }
