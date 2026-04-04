@@ -47,14 +47,17 @@ to measure how well each model handles the investigation task. All runs use
 the same inference pipeline (`inference.py`) with identical system prompts and
 structured logging.
 
-| Model                         | Model ID                            | Easy | Medium | Hard   | Avg Score | Notes                     |
-| ----------------------------- | ----------------------------------- | ---- | ------ | ------ | --------- | ------------------------- |
-| **Qwen 2.5 72B**        | `Qwen/Qwen2.5-72B-Instruct`       | 0.91 | 0.906  | 0.9038 | 0.906     | Primary development model |
-| **NVIDIA Nemotron**     | `nvidia.nemotron-super-3-120b`    | —   | —     | —     | —        |                           |
-| **Mistral Ministral**   | `mistral.ministral-3-8b-instruct` | —   | —     | —     | —        |                           |
-| **DeepSeek V3.2**       | `deepseek.v3.2`                   | —   | —     | —     | —        |                           |
-| **Gemma 3 12B**         | `google.gemma-3-12b-it`           | —   | —     | —     | —        |                           |
-| **Rule-based baseline** | N/A (no LLM)                        | 0.91 | 0.906  | 0.9038 | 0.906     | Deterministic, seed=0     |
+| Model | Model ID | Easy | Medium | Hard | Avg Score | Notes |
+|-------|----------|------|--------|------|-----------|-------|
+| **Qwen3 80B** | `qwen.qwen3-next-80b-a3b` | 0.9667 | 0.9640 | 0.9637 | 0.9648 | Via AWS Bedrock; 3-seed mean: easy=0.957, med=0.957, hard=0.645 |
+| **NVIDIA Nemotron** | `nvidia.nemotron-super-3-120b` | — | — | — | — | |
+| **Mistral Ministral** | `mistral.ministral-3-8b-instruct` | — | — | — | — | |
+| **DeepSeek V3.2** | `deepseek.v3.2` | — | — | — | — | |
+| **Gemma 3 12B** | `google.gemma-3-12b-it` | — | — | — | — | |
+| **Rule-based baseline** | N/A (no LLM) | 0.9100 | 0.9060 | 0.9038 | 0.9066 | Deterministic, seed=0 |
+
+> Scores are from seed=0 runs unless noted. `—` = evaluation pending.
+> Qwen3 hard-task variance is high (one seed=1 run scored 0.0 due to evasion event timing).
 
 ---
 
