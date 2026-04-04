@@ -45,32 +45,31 @@ MODEL_NAME = os.getenv("MODEL_NAME", "Qwen/Qwen2.5-72B-Instruct")
 LLM_BACKEND = "hf"  # "hf" or "bedrock"
 BEDROCK_MODEL_ID = os.getenv("BEDROCK_MODEL_ID", "qwen.qwen3-next-80b-a3b")
 
-SYSTEM_PROMPT = """You are an AI detective investigating a social network to find 10 coordinated fake accounts (a "gang"). You interact via actions:
+SYSTEM_PROMPT = """You are an AI detective finding 10 coordinated fake accounts in a social network.
 
-ACTIONS:
-- INSPECT <account_id>: Reveal full profile + follow list (costs 1 step)
-- INVESTIGATE_NETWORK <account_id>: Reveal 2-hop neighbor IDs (costs 2 steps)
-- FLAG <account_id>: Mark account as fake (free, triggers SUSPECT cascade)
-- SUBMIT: End episode and get scored
+ACTIONS (reply with exactly ONE line):
+- INSPECT acc_XXXX  — reveal profile (costs 1 step)
+- FLAG acc_XXXX     — mark as fake (FREE, no step cost, triggers suspect cascade)
+- SUBMIT            — end episode, get scored
 
-STRATEGY:
-1. Start by INSPECTing available accounts to see their risk scores
-2. FLAG accounts with fake_risk_score >= 0.55 (and hub_legitimacy_score < 0.70)
-3. After flagging, ALWAYS check suspect_ids — these are auto-elevated by cascade
-4. INSPECT suspects FIRST (highest priority — they're likely gang members)
-5. SUBMIT when you have 10 flags or steps are running low (<=3)
+DECISION RULES (apply top-to-bottom, first match wins):
+1. If suspect_ids lists accounts you haven't inspected → INSPECT the first one
+2. If ANY profiled account has shared_ip_count >= 5 and is NOT flagged → FLAG it immediately
+3. If ANY profiled account has photo_reuse >= 0.50 AND bio_template >= 0.40 and hub < 0.70 and NOT flagged → FLAG it
+4. If ANY profiled account has fake_risk_score >= 0.30 and hub < 0.70 and NOT flagged → FLAG it
+5. If there are uninspected visible accounts and steps > 3 → INSPECT the next one
+6. If you have 10 flags OR steps <= 3 → SUBMIT
 
-KEY SIGNALS:
-- fake_risk_score: composite risk 0-1, higher = more likely fake
-- suspect_ids: auto-elevated accounts after FLAG cascade — INSPECT THESE NEXT
-- flagged_neighbor_count > 0: strong gang signal
-- hub_legitimacy_score > 0.70: likely a celebrity, do NOT flag
-- shared_ip_count >= 5: strong gang signal (gang shares one IP subnet)
+IMPORTANT:
+- FLAG is FREE (costs 0 steps) — flag aggressively when you see suspicious signals
+- After each FLAG, new suspects appear — always inspect suspects before other accounts
+- hub_legitimacy_score > 0.70 means celebrity — do NOT flag
+- shared_ip_count >= 5 is the strongest gang signal (all 10 share one IP)
+- Do NOT re-inspect already inspected accounts
 
-Reply with EXACTLY one line — the action:
-INSPECT acc_XXXX
+Reply with EXACTLY one line, nothing else:
 FLAG acc_XXXX
-INVESTIGATE_NETWORK acc_XXXX
+INSPECT acc_XXXX
 SUBMIT"""
 
 
@@ -186,7 +185,13 @@ def call_llm(prompt: str) -> str:
     fn = _call_bedrock if LLM_BACKEND == "bedrock" else _call_hf
     for attempt in range(3):
         try:
-            return fn(prompt)
+            raw = fn(prompt)
+            if os.getenv("DEBUG_LLM"):
+                print(f"    [LLM RAW] {raw[:200]}")
+            # Strip Qwen3 <think>...</think> reasoning blocks
+            import re
+            cleaned = re.sub(r"<think>.*?</think>", "", raw, flags=re.DOTALL).strip()
+            return cleaned if cleaned else raw
         except Exception as e:
             if attempt == 2:
                 print(f"    [LLM ERROR] {e} (gave up after 3 attempts)")
@@ -198,7 +203,7 @@ def call_llm(prompt: str) -> str:
 
 
 def format_obs(obs: dict) -> str:
-    """Format observation as text for LLM."""
+    """Format observation as text for LLM — shows raw signals prominently."""
     lines = []
     lines.append(f"TASK: {obs.get('task','?').upper()} | Steps remaining: {obs.get('steps_remaining','?')}")
 
@@ -209,23 +214,42 @@ def format_obs(obs: dict) -> str:
     inspected = obs.get("inspected_ids", [])
     uninspected_suspects = [s for s in suspects if s not in inspected]
     if uninspected_suspects:
-        lines.append(f"*** SUSPECTS to inspect ({len(uninspected_suspects)}): {', '.join(uninspected_suspects)} ***")
+        lines.append(f"*** SUSPECTS (uninspected) → INSPECT THESE FIRST: {', '.join(uninspected_suspects)} ***")
 
     accounts = obs.get("visible_accounts", [])
     if accounts:
-        lines.append("\nPROFILED ACCOUNTS (by risk):")
-        for a in sorted(accounts, key=lambda x: x.get("fake_risk_score", 0), reverse=True)[:12]:
+        # Split: unflagged accounts that should be flagged vs rest
+        unflagged_suspicious = []
+        flagged_accs = []
+        clean_accs = []
+        for a in sorted(accounts, key=lambda x: x.get("fake_risk_score", 0), reverse=True):
             aid = a.get("account_id", "?")
-            risk = a.get("fake_risk_score", 0)
-            hub = a.get("hub_legitimacy_score", 0)
-            fnbr = a.get("flagged_neighbor_count", 0)
-            status = a.get("status", "normal").upper()
-            ip = a.get("shared_ip_count", 0)
-            flag_mark = " FLAGGED" if aid in flagged else ""
-            hub_mark = " [HUB-SAFE]" if hub > 0.70 else ""
-            fnbr_mark = f" fnbr={fnbr}(!)" if fnbr > 0 else ""
-            ip_mark = f" ip_shared={ip}" if ip >= 5 else ""
-            lines.append(f"  {status:15s} {aid}{flag_mark}: risk={risk:.3f} hub={hub:.2f}{hub_mark}{fnbr_mark}{ip_mark}")
+            if aid in flagged:
+                flagged_accs.append(a)
+            elif (a.get("shared_ip_count", 0) >= 5 or
+                  (a.get("photo_reuse_score", 0) >= 0.50 and a.get("bio_template_score", 0) >= 0.40)):
+                unflagged_suspicious.append(a)
+            else:
+                clean_accs.append(a)
+
+        if unflagged_suspicious:
+            lines.append(f"\n!!! ACTION NEEDED — FLAG THESE ({len(unflagged_suspicious)} accounts with strong fake signals):")
+            for a in unflagged_suspicious:
+                aid = a.get("account_id", "?")
+                lines.append(f"  → FLAG {aid}: risk={a.get('fake_risk_score',0):.3f} photo={a.get('photo_reuse_score',0):.2f} bio={a.get('bio_template_score',0):.2f} ip_shared={a.get('shared_ip_count',0)} hub={a.get('hub_legitimacy_score',0):.2f}")
+
+        if flagged_accs:
+            lines.append(f"\nALREADY FLAGGED ({len(flagged_accs)}):")
+            for a in flagged_accs[:5]:
+                lines.append(f"  ✓ {a.get('account_id','?')}")
+
+        if clean_accs:
+            lines.append(f"\nCLEAN ACCOUNTS ({len(clean_accs)}):")
+            for a in clean_accs[:5]:
+                aid = a.get("account_id", "?")
+                hub = a.get("hub_legitimacy_score", 0)
+                hub_mark = " [CELEBRITY]" if hub > 0.70 else ""
+                lines.append(f"  {aid}: risk={a.get('fake_risk_score',0):.3f} photo={a.get('photo_reuse_score',0):.2f} bio={a.get('bio_template_score',0):.2f} hub={hub:.2f}{hub_mark}")
 
     visible = obs.get("visible_account_ids", [])
     uninspected = [i for i in visible if i not in inspected]
@@ -324,7 +348,8 @@ def test_baseline_stability(base_url: str) -> bool:
 
 def test_llm_agent(base_url: str, task: str, seed: int = 0) -> float:
     """Phase 2: Run an LLM agent against one task (simulates judge's Nemotron run)."""
-    print(f"\n  --- LLM Agent: task={task}, seed={seed}, model={MODEL_NAME} ---")
+    _model = f"Bedrock/{BEDROCK_MODEL_ID}" if LLM_BACKEND == "bedrock" else MODEL_NAME
+    print(f"\n  --- LLM Agent: task={task}, seed={seed}, model={_model} ---")
 
     # Reset
     reset_resp = http_post(f"{base_url}/reset", {"task": task, "seed": seed})
@@ -365,7 +390,8 @@ def test_llm_agent(base_url: str, task: str, seed: int = 0) -> float:
 def test_llm_all_tasks(base_url: str) -> Dict[str, float]:
     """Phase 2: Run LLM agent on all 3 tasks."""
     print("\n" + "="*60)
-    print(f"PHASE 2: LLM Agent Evaluation (model={MODEL_NAME})")
+    _model = f"Bedrock/{BEDROCK_MODEL_ID}" if LLM_BACKEND == "bedrock" else MODEL_NAME
+    print(f"PHASE 2: LLM Agent Evaluation (model={_model})")
     print("="*60)
 
     scores = {}
