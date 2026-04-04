@@ -527,11 +527,53 @@ class FakeGangEnvironment(_OpenEnvBase):
             suspicious_mutual_ratio=suspicious_mutual_ratio,
         )
 
+    def _build_hint(self) -> str:
+        """Generate actionable hints for the agent based on current state."""
+        hints = []
+
+        # Hint 1: Uninspected suspects (highest priority)
+        suspect_ids = [
+            sid for sid in self._visible_ids
+            if sid not in self._flagged
+            and self._account_statuses.get(sid, "normal") == "suspect"
+        ]
+        uninspected_suspects = [s for s in suspect_ids if s not in self._inspected]
+        if uninspected_suspects:
+            hints.append(f"HINT: {len(uninspected_suspects)} SUSPECT accounts need inspection — INSPECT {uninspected_suspects[0]} next (auto-elevated by cascade, likely gang member).")
+
+        # Hint 2: Unflagged accounts with strong fake signals
+        unflagged_fakes = []
+        for acc_id in self._inspected:
+            if acc_id in self._flagged:
+                continue
+            p = self._profiled.get(acc_id)
+            if not p:
+                continue
+            if (p.shared_ip_count >= 5
+                or (p.photo_reuse_score >= 0.50 and p.bio_template_score >= 0.40
+                    and p.hub_legitimacy_score < 0.70)):
+                unflagged_fakes.append(acc_id)
+        if unflagged_fakes and not uninspected_suspects:
+            hints.append(f"HINT: FLAG {unflagged_fakes[0]} — strong fake signals detected (photo_reuse/bio_template/shared_ip). FLAG is FREE (costs 0 steps).")
+
+        # Hint 3: Submit reminder
+        steps_left = max(0, self._max_steps - self._step_count)
+        if len(self._flagged) >= 10:
+            hints.append("HINT: You have 10 flags — SUBMIT now to end the episode and get scored.")
+        elif steps_left <= 3 and not self._done:
+            hints.append(f"HINT: Only {steps_left} steps left — consider SUBMIT to lock in your score.")
+
+        return " ".join(hints)
+
     def _make_observation(
         self,
         message: str = "",
         terminal_reward: Optional[float] = None,
     ) -> FakeGangObservation:
+        # Append hints to message for agent guidance
+        hint = self._build_hint() if not self._done else ""
+        full_message = f"{message} {hint}".strip() if hint else message
+
         return FakeGangObservation(
             done=self._done,
             reward=terminal_reward,
@@ -549,7 +591,7 @@ class FakeGangEnvironment(_OpenEnvBase):
             evasion_triggered=self._evasion_triggered,
             evasion_count=self._evasion_count,
             task=self._task,
-            message=message,
+            message=full_message,
             suspect_ids=[
                 sid for sid in self._visible_ids
                 if sid not in self._flagged
