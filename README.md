@@ -15,7 +15,7 @@ tags:
   - llm-agent
 ---
 
-# GraphStrike : Coordinated Fake Account Ring Detection
+# GraphStrike : Coordinated Fake Account Network Detection
 
 > **OpenEnv Hackathon × SCALER School of Technology**
 > Live deployment: [huggingface.co/spaces/Pandago/graphstrike](https://huggingface.co/spaces/Pandago/graphstrike)
