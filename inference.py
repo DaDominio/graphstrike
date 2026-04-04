@@ -94,68 +94,86 @@ def log_end(success: bool, steps: int, score: float, rewards: List[float]) -> No
 # ---------------------------------------------------------------------------
 
 SYSTEM_PROMPT = textwrap.dedent("""
-    You are an AI detective investigating a social network to find 10 coordinated
-    fake accounts (a "gang"). You interact with the environment via actions:
+    You are an AI detective finding 10 coordinated fake accounts in a social network.
 
-    ACTIONS:
-    - INSPECT <account_id>: Reveal full profile + follow list (costs 1 step)
-    - INVESTIGATE_NETWORK <account_id>: Reveal 2-hop neighbor IDs (costs 2 steps)
-    - FLAG <account_id>: Mark account as fake (free, triggers SUSPECT cascade)
-    - UNFLAG <account_id>: Remove flag (free)
-    - SUBMIT: End episode and get scored
+    ACTIONS (reply with exactly ONE line):
+    - INSPECT acc_XXXX  — reveal profile (costs 1 step)
+    - FLAG acc_XXXX     — mark as fake (FREE, no step cost, triggers suspect cascade)
+    - SUBMIT            — end episode, get scored
 
-    STRATEGY:
-    1. INSPECT accounts to reveal their risk profiles
-    2. FLAG accounts with high fake_risk_score (>= 0.60)
-    3. After flagging, check suspect_ids — these are auto-elevated neighbors
-    4. Always INSPECT suspects first (highest priority)
-    5. SUBMIT when you've flagged 10 accounts or are running low on steps
+    DECISION RULES (apply top-to-bottom, first match wins):
+    1. If suspect_ids lists accounts you haven't inspected → INSPECT the first one
+    2. If ANY profiled account has shared_ip_count >= 5 and is NOT flagged → FLAG it immediately
+    3. If ANY profiled account has photo_reuse >= 0.50 AND bio_template >= 0.40 and hub < 0.70 and NOT flagged → FLAG it
+    4. If ANY profiled account has fake_risk_score >= 0.30 and hub < 0.70 and NOT flagged → FLAG it
+    5. If there are uninspected visible accounts and steps > 3 → INSPECT the next one
+    6. If you have 10 flags OR steps <= 3 → SUBMIT
 
-    KEY SIGNALS:
-    - fake_risk_score: Composite risk (0-1), higher = more likely fake
-    - suspect_ids: Accounts auto-elevated by FLAG cascade — inspect these next
-    - flagged_neighbor_count: How many flagged accounts follow this one
-    - hub_legitimacy_score > 0.70: Likely a celebrity, do NOT flag
+    IMPORTANT:
+    - FLAG is FREE (costs 0 steps) — flag aggressively when you see suspicious signals
+    - After each FLAG, new suspects appear — always inspect suspects before other accounts
+    - hub_legitimacy_score > 0.70 means celebrity — do NOT flag
+    - shared_ip_count >= 5 is the strongest gang signal (all 10 share one IP)
+    - Do NOT re-inspect already inspected accounts
 
-    Reply with EXACTLY one action line:
-    INSPECT acc_XXXX
+    Reply with EXACTLY one line, nothing else:
     FLAG acc_XXXX
+    INSPECT acc_XXXX
     SUBMIT
 """).strip()
 
 
 def _format_obs_for_llm(obs_data: dict) -> str:
-    """Format observation as text prompt for the LLM."""
+    """Format observation as text prompt for the LLM — shows raw signals prominently."""
     lines = []
     lines.append(f"TASK: {obs_data.get('task', '?').upper()} | Steps remaining: {obs_data.get('steps_remaining', '?')}")
     flagged = obs_data.get("flagged_ids", [])
-    lines.append(f"Currently flagged ({len(flagged)}/10): {', '.join(flagged) if flagged else 'none'}")
+    lines.append(f"Flagged ({len(flagged)}/10): {', '.join(flagged) if flagged else 'none'}")
+
     suspects = obs_data.get("suspect_ids", [])
     inspected = obs_data.get("inspected_ids", [])
     uninspected_suspects = [s for s in suspects if s not in inspected]
     if uninspected_suspects:
-        lines.append(f"SUSPECTS not yet inspected ({len(uninspected_suspects)}): {', '.join(uninspected_suspects)}")
-    lines.append("")
+        lines.append(f"*** SUSPECTS (uninspected) → INSPECT THESE FIRST: {', '.join(uninspected_suspects)} ***")
 
     accounts = obs_data.get("visible_accounts", [])
     if accounts:
-        lines.append("PROFILED ACCOUNTS (sorted by risk):")
-        sorted_accs = sorted(accounts, key=lambda a: a.get("fake_risk_score", 0), reverse=True)
-        for a in sorted_accs[:15]:
-            status = a.get("status", "normal").upper()
+        unflagged_suspicious = []
+        flagged_accs = []
+        clean_accs = []
+        for a in sorted(accounts, key=lambda x: x.get("fake_risk_score", 0), reverse=True):
             aid = a.get("account_id", "?")
-            risk = a.get("fake_risk_score", 0)
-            hub = a.get("hub_legitimacy_score", 0)
-            fnbr = a.get("flagged_neighbor_count", 0)
-            flagged_marker = " FLAGGED" if aid in flagged else ""
-            hub_marker = " [HUB]" if hub > 0.70 else ""
-            fnbr_marker = f" fnbr={fnbr}(!)" if fnbr > 0 else ""
-            lines.append(f"  {status:15s} {aid}{flagged_marker}: risk={risk:.3f} hub={hub:.2f}{hub_marker}{fnbr_marker}")
+            if aid in flagged:
+                flagged_accs.append(a)
+            elif (a.get("shared_ip_count", 0) >= 5 or
+                  (a.get("photo_reuse_score", 0) >= 0.50 and a.get("bio_template_score", 0) >= 0.40)):
+                unflagged_suspicious.append(a)
+            else:
+                clean_accs.append(a)
+
+        if unflagged_suspicious:
+            lines.append(f"\n!!! ACTION NEEDED — FLAG THESE ({len(unflagged_suspicious)} suspicious):")
+            for a in unflagged_suspicious:
+                aid = a.get("account_id", "?")
+                lines.append(f"  → FLAG {aid}: risk={a.get('fake_risk_score',0):.3f} photo={a.get('photo_reuse_score',0):.2f} bio={a.get('bio_template_score',0):.2f} ip_shared={a.get('shared_ip_count',0)} hub={a.get('hub_legitimacy_score',0):.2f}")
+
+        if flagged_accs:
+            lines.append(f"\nALREADY FLAGGED ({len(flagged_accs)}):")
+            for a in flagged_accs[:5]:
+                lines.append(f"  ✓ {a.get('account_id','?')}")
+
+        if clean_accs:
+            lines.append(f"\nCLEAN ({len(clean_accs)}):")
+            for a in clean_accs[:8]:
+                aid = a.get("account_id", "?")
+                hub = a.get("hub_legitimacy_score", 0)
+                hub_mark = " [CELEBRITY]" if hub > 0.70 else ""
+                lines.append(f"  {aid}: risk={a.get('fake_risk_score',0):.3f} photo={a.get('photo_reuse_score',0):.2f} bio={a.get('bio_template_score',0):.2f} hub={hub:.2f}{hub_mark}")
 
     visible_ids = obs_data.get("visible_account_ids", [])
     uninspected_ids = [i for i in visible_ids if i not in inspected]
     if uninspected_ids:
-        lines.append(f"\nUninspected visible IDs ({len(uninspected_ids)}): {', '.join(uninspected_ids[:10])}{'...' if len(uninspected_ids) > 10 else ''}")
+        lines.append(f"\nUninspected IDs ({len(uninspected_ids)}): {', '.join(uninspected_ids[:10])}{'...' if len(uninspected_ids) > 10 else ''}")
 
     lines.append(f"\nMessage: {obs_data.get('message', '')}")
     return "\n".join(lines)
