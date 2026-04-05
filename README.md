@@ -45,30 +45,37 @@ curl -X POST https://pandago-graphstrike.hf.space/baseline
 We evaluate GraphStrike's hybrid rule/LLM policy across multiple frontier models
 to measure how well each model handles the investigation task. All runs use
 the same inference pipeline (`inference.py`) with identical system prompts and
-structured logging.
-
-| Model                          | Model ID                            | Easy   | Medium | Hard   | Avg Score        | Notes                                          |
-| ------------------------------ | ----------------------------------- | ------ | ------ | ------ | ---------------- | ---------------------------------------------- |
-| **Qwen3 80B**            | `qwen.qwen3-next-80b-a3b`         | 0.9667 | 0.9640 | 0.9637 | **0.9648** | 3-seed mean: easy=0.957, med=0.957, hard=0.645 |
-| **DeepSeek V3.2**        | `deepseek.v3.2`                   | 0.9514 | 0.9600 | 0.9426 | **0.9513** | 3-seed mean: easy=0.640, med=0.957, hard=0.645 |
-| **NVIDIA Nemotron 120B** | `nvidia.nemotron-super-3-120b`    | 0.9300 | 0.9413 | 0.9637 | **0.9450** | 3-seed mean: easy=0.957, med=0.957, hard=0.645 |
-| **Gemma 3 12B**          | `google.gemma-3-12b-it`           | 0.9000 | 0.9080 | 0.9075 | **0.9052** | 3-seed mean: easy=0.912, med=0.917, hard=0.603 |
-| **Mistral Ministral 8B** | `mistral.ministral-3-8b-instruct` | 0.967    | 0.964     | 0.964     | **0.965**               | -                             |
-| **Rule-based baseline**  | N/A (no LLM)                        | 0.9100 | 0.9060 | 0.9038 | **0.9066** | Deterministic, seed=0                          |
-
-> Scores are from seed=0 single-run results unless noted. All models use the same `inference.py` pipeline and system prompt.
+structured logging. Each model ran: (1) seed=0 on all 3 tasks, and
+(2) seeds 0-2 on all 3 tasks for variance measurement.
 
 
-### Score Consistency & Variance Analysis
 
-**3-Seed Variance (seeds 0, 1, 2):**
+**Seed=0 scores (single episode per task):**
 
-| Model                          | Easy (3-seed)         | Medium (3-seed)       | Hard (3-seed)         | Variance Pattern                                        |
-| ------------------------------ | --------------------- | --------------------- | --------------------- | ------------------------------------------------------- |
-| **Qwen3 80B**            | 0.967 / 0.953 / 0.950 | 0.964 / 0.968 / 0.940 | 0.964 / 0.000 / 0.970 | Stable on easy+medium; hard seed=1 catastrophic failure |
-| **DeepSeek V3.2**        | 0.967 / 0.953 / 0.000 | 0.964 / 0.968 / 0.940 | 0.964 / 0.000 / 0.970 | Easy seed=2 catastrophic failure; hard seed=1 failure   |
-| **NVIDIA Nemotron 120B** | 0.967 / 0.953 / 0.950 | 0.958 / 0.974 / 0.940 | 0.964 / 0.000 / 0.970 | Most consistent on easy+medium; hard seed=1 failure     |
-| **Gemma 3 12B**          | 0.900 / 0.937 / 0.900 | 0.945 / 0.900 / 0.906 | 0.907 / 0.000 / 0.900 | Consistently lower ceiling; hard seed=1 failure         |
+| Model                   | Params   | Easy  | Medium | Hard  | Mean            |
+| ----------------------- | -------- | ----- | ------ | ----- | --------------- |
+| Mistral Ministral 3 8B  | 8B       | 0.967 | 0.964  | 0.964 | **0.965** |
+| Nvidia Nemotron Super 3 | 120B     | 0.930 | 0.941  | 0.964 | **0.945** |
+| DeepSeek V3.2           | 685B MoE | 0.967 | 0.960  | 0.933 | **0.953** |
+| Meta Llama 4 Scout      | 17B      | 0.923 | 0.904  | 0.903 | **0.910** |
+| Google Gemma 3          | 12B      | 0.900 | 0.908  | 0.908 | **0.905** |
+
+
+<br>
+
+**3-seed variance scores (mean across seeds 0, 1, 2):**
+
+| Model                   | Easy (mean/var)         | Medium (mean/var)       | Hard (mean/var)         | Bottleneck               |
+| ----------------------- | ----------------------- | ----------------------- | ----------------------- | ------------------------ |
+| Nvidia Nemotron Super 3 | 0.957 / 0.000           | 0.957 / 0.000           | **0.645** / 0.208 | Hard/seed=1              |
+| Mistral Ministral 3 8B  | 0.958 / 0.000           | **0.645** / 0.208 | **0.623** / 0.195 | Medium+Hard/seed=2       |
+| DeepSeek V3.2           | **0.640** / 0.205 | 0.957 / 0.000           | **0.645** / 0.208 | Easy/seed=2, Hard/seed=1 |
+| Google Gemma 3          | 0.912 / 0.000           | 0.917 / 0.000           | **0.603** / 0.182 | Hard/seed=1              |
+| Meta Llama 4 Scout      | 0.916 / 0.000           | 0.903 / 0.000           | **0.602** / 0.181 | Hard/seed=1              |
+
+*Bold entries indicate episodes with a 0.000 score pulling down the mean.*
+
+
 
 **Key Findings:**
 
@@ -1452,86 +1459,6 @@ difficulty scaling is designed so that easy is consistently solvable, medium
 requires some luck, and hard genuinely challenges frontier LLM agents via
 evasion events that destroy graph signals mid-investigation.
 
-### 13.1 Multi-Model LLM Benchmark
-
-Five frontier LLMs were benchmarked against the environment using the same
-`inference.py` agent harness — structured prompts, observation formatting, and
-the same decision rules. Each model ran: (1) seed=0 on all 3 tasks, and
-(2) seeds 0-2 on all 3 tasks for variance measurement.
-
-**Seed=0 scores (single episode per task):**
-
-| Model                   | Params   | Easy  | Medium | Hard  | Mean            |
-| ----------------------- | -------- | ----- | ------ | ----- | --------------- |
-| Mistral Ministral 3 8B  | 8B       | 0.967 | 0.964  | 0.964 | **0.965** |
-| Nvidia Nemotron Super 3 | 120B     | 0.930 | 0.941  | 0.964 | **0.945** |
-| DeepSeek V3.2           | 685B MoE | 0.967 | 0.960  | 0.933 | **0.953** |
-| Meta Llama 4 Scout      | 17B      | 0.923 | 0.904  | 0.903 | **0.910** |
-| Google Gemma 3          | 12B      | 0.900 | 0.908  | 0.908 | **0.905** |
-
-**3-seed variance scores (mean across seeds 0, 1, 2):**
-
-| Model                   | Easy (mean/var)         | Medium (mean/var)       | Hard (mean/var)         | Bottleneck               |
-| ----------------------- | ----------------------- | ----------------------- | ----------------------- | ------------------------ |
-| Nvidia Nemotron Super 3 | 0.957 / 0.000           | 0.957 / 0.000           | **0.645** / 0.208 | Hard/seed=1              |
-| Mistral Ministral 3 8B  | 0.958 / 0.000           | **0.645** / 0.208 | **0.623** / 0.195 | Medium+Hard/seed=2       |
-| DeepSeek V3.2           | **0.640** / 0.205 | 0.957 / 0.000           | **0.645** / 0.208 | Easy/seed=2, Hard/seed=1 |
-| Google Gemma 3          | 0.912 / 0.000           | 0.917 / 0.000           | **0.603** / 0.182 | Hard/seed=1              |
-| Meta Llama 4 Scout      | 0.916 / 0.000           | 0.903 / 0.000           | **0.602** / 0.181 | Hard/seed=1              |
-
-*Bold entries indicate episodes with a 0.000 score pulling down the mean.*
-
-### 13.2 Failure Mode Analysis
-
-Two distinct failure modes were identified from step-by-step logs:
-
-**Failure Mode 1 — "Inspect Blindness" on Hard/Seed=1** (4/5 models)
-
-On the 1000-account `hard` network with `seed=1`, DeepSeek, Gemma, Llama, and
-Nvidia all spend **80 steps doing INSPECT on random accounts and never FLAG anyone**.
-`flagged=0/10` and `suspects=0` for the entire episode.
-
-Root cause: With 1000 accounts and only 10 gang members (1%), random inspection
-yields ~0.8 expected gang hits in 80 steps. Without a FLAG to trigger the suspect
-cascade, no suspects appear. The LLM sees profiles with mixed signals but never
-commits to a FLAG — it keeps exploring instead of acting.
-
-Nvidia's variant: Nemotron flagged 1 account (creating 10 suspects) but then
-**ignored all suspects** and continued inspecting random accounts for 70+ steps,
-ending with only 2 wrong flags (FP=2, TP=0).
-
-**Failure Mode 2 — "Session Reset Clobber"** (DeepSeek + Mistral)
-
-The agent correctly flags all 10 accounts (`flagged=10/10`), then issues SUBMIT —
-but the response shows `flagged=0/10` with `steps_left` from a different task.
-The shared single-session `_env` was reset by the next episode before SUBMIT processed.
-
-Evidence from logs:
-
-```
-DeepSeek easy/seed=2:  FLAG→flagged=10/10,steps=7  SUBMIT→flagged=0/10,steps=48 (medium!)
-Mistral medium/seed=2: FLAG→flagged=10/10,steps=20 SUBMIT→flagged=0/10,steps=42
-Mistral hard/seed=2:   FLAG→flagged=10/10,steps=16 SUBMIT→flagged=0/10,steps=30
-```
-
-These models **solved the task** but scored 0.000 due to the shared-state race.
-This is NOT a model intelligence failure — it's a concurrency artefact of
-single-session benchmarking.
-
-### 13.3 Key Takeaways
-
-- **Easy + Medium are solved**: All 5 models achieve ≥0.90 grader scores on easy
-  and medium when the session is stable. The environment is well-calibrated for
-  these difficulty levels.
-- **Hard is genuinely hard**: The 1000-account network with 80-step budget creates
-  a real exploration challenge. Even 120B+ models fail to find the gang without
-  the cascade mechanism being triggered early.
-- **Prompt-following matters more than model size**: The 8B Mistral model matches
-  or beats the 685B DeepSeek on seed=0 across all tasks — structured prompts with
-  clear decision rules level the playing field.
-- **The cascade is the key mechanic**: Models that FLAG early (triggering the suspect
-  cascade) solve episodes in 10-25 steps. Models that hesitate spend 80 steps
-  inspecting and fail. The environment rewards decisiveness over caution.
 
 ---
 
