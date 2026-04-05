@@ -1,0 +1,1256 @@
+ubuntu@ip-172-31-33-59:~/meta/meta-hack-26$ python3 gemma_test_judge_eval.py --url https://p
+andago-graphstrike.hf.space --bedrock
+GraphStrike Judge Evaluation Simulator
+Target:  https://pandago-graphstrike.hf.space
+Backend: bedrock
+Model:   Bedrock/google.gemma-3-12b-it
+Token:   set
+
+============================================================
+PHASE 0: Endpoint Verification
+============================================================
+  ✓ GET /health
+  ✓ GET /tasks
+  ✓ GET /metadata
+  ✓ GET /schema
+  ✓ GET /web
+  ✓ POST /reset
+  ✓ GET /state
+  ✓ POST /step
+  ✓ POST /step
+  ✓ GET /grader
+  ✓ POST /mcp
+  ✓ POST /baseline
+
+============================================================
+PHASE 1: Baseline Stability (3 runs)
+============================================================
+  Run 1: easy=0.9100  medium=0.9060  hard=0.9038
+  Run 2: easy=0.9100  medium=0.9060  hard=0.9038
+  Run 3: easy=0.9100  medium=0.9060  hard=0.9038
+  ✓ All 3 runs identical — baseline is deterministic
+
+============================================================
+PHASE 2: LLM Agent Evaluation (model=Bedrock/google.gemma-3-12b-it)
+============================================================
+
+  --- LLM Agent: task=easy, seed=0, model=Bedrock/google.gemma-3-12b-it ---
+    Step  1: INSPECT acc_0043                    flagged=0/10  suspects=0  steps_left=29
+    Step  2: FLAG acc_0043                       flagged=1/10  suspects=8  steps_left=29
+    Step  3: INSPECT acc_0036                    flagged=1/10  suspects=8  steps_left=28
+    Step  4: INSPECT acc_0001                    flagged=1/10  suspects=8  steps_left=27
+    Step  5: INSPECT acc_0014                    flagged=1/10  suspects=8  steps_left=26
+    Step  6: INSPECT acc_0012                    flagged=1/10  suspects=8  steps_left=25
+    Step  7: INSPECT acc_0000                    flagged=1/10  suspects=8  steps_left=24
+    Step  8: INSPECT acc_0027                    flagged=1/10  suspects=8  steps_left=23
+    Step  9: INSPECT acc_0047                    flagged=1/10  suspects=8  steps_left=22
+    Step 10: INSPECT acc_0007                    flagged=1/10  suspects=8  steps_left=21
+    Step 11: FLAG acc_0001                       flagged=2/10  suspects=8  steps_left=21
+    Step 12: INSPECT acc_0028                    flagged=2/10  suspects=8  steps_left=20
+    Step 13: FLAG acc_0027                       flagged=3/10  suspects=7  steps_left=20
+    Step 14: FLAG acc_0047                       flagged=4/10  suspects=6  steps_left=19
+    Step 15: FLAG acc_0014                       flagged=5/10  suspects=5  steps_left=19
+    Step 16: FLAG acc_0007                       flagged=6/10  suspects=4  steps_left=19
+    Step 17: FLAG acc_0000                       flagged=7/10  suspects=3  steps_left=19
+    Step 18: FLAG acc_0012                       flagged=8/10  suspects=2  steps_left=19
+    Step 19: FLAG acc_0036                       flagged=9/10  suspects=1  steps_left=19
+    Step 20: FLAG acc_0028                       flagged=10/10  suspects=0  steps_left=19
+    Step 21: INSPECT acc_0035                    flagged=10/10  suspects=0  steps_left=18
+    Step 22: INSPECT acc_0022                    flagged=0/10  suspects=0  steps_left=79
+    Step 23: INSPECT acc_0704                    flagged=0/10  suspects=0  steps_left=78
+    Step 24: INSPECT acc_0289                    flagged=0/10  suspects=0  steps_left=77
+    Step 25: INSPECT acc_0826                    flagged=0/10  suspects=0  steps_left=75
+    Step 26: INSPECT acc_0927                    flagged=0/10  suspects=0  steps_left=73
+    Step 27: INSPECT acc_0441                    flagged=0/10  suspects=0  steps_left=72
+    Step 28: INSPECT acc_0871                    flagged=0/10  suspects=0  steps_left=71
+    Step 29: INSPECT acc_0880                    flagged=0/10  suspects=0  steps_left=69
+    Step 30: INSPECT acc_0652                    flagged=0/10  suspects=0  steps_left=68
+    Step 31: INSPECT acc_0939                    flagged=0/10  suspects=0  steps_left=66
+    Step 32: INSPECT acc_0070                    flagged=0/10  suspects=0  steps_left=65
+    Step 33: INSPECT acc_0915                    flagged=0/10  suspects=0  steps_left=63
+    Step 34: INSPECT acc_0443                    flagged=0/10  suspects=0  steps_left=62
+    Step 35: INSPECT acc_0970                    flagged=0/10  suspects=0  steps_left=60
+    Step 36: INSPECT acc_0028                    flagged=0/10  suspects=0  steps_left=57
+    Step 37: INSPECT acc_0792                    flagged=0/10  suspects=0  steps_left=56
+    Step 38: INSPECT acc_0579                    flagged=0/10  suspects=0  steps_left=54
+    Step 39: INSPECT acc_0037                    flagged=0/10  suspects=0  steps_left=53
+    Step 40: INSPECT acc_0295                    flagged=0/10  suspects=0  steps_left=51
+    Step 41: INSPECT acc_0438                    flagged=0/10  suspects=0  steps_left=50
+    Step 42: INSPECT acc_0439                    flagged=0/10  suspects=0  steps_left=48
+    Step 43: FLAG acc_0439                       flagged=1/10  suspects=5  steps_left=47
+    Step 44: INSPECT acc_0237                    flagged=1/10  suspects=5  steps_left=46
+    Step 45: FLAG acc_0237                       flagged=2/10  suspects=6  steps_left=46
+    Step 46: INSPECT acc_0621                    flagged=2/10  suspects=6  steps_left=45
+    Step 47: FLAG acc_0621                       flagged=3/10  suspects=6  steps_left=45
+    Step 48: INSPECT acc_0389                    flagged=3/10  suspects=6  steps_left=43
+    Step 49: INSPECT acc_0160                    flagged=3/10  suspects=6  steps_left=42
+    Step 50: FLAG acc_0160                       flagged=4/10  suspects=6  steps_left=41
+    Step 51: INSPECT acc_0549                    flagged=4/10  suspects=6  steps_left=40
+    Step 52: FLAG acc_0549                       flagged=5/10  suspects=5  steps_left=40
+    Step 53: FLAG acc_0389                       flagged=6/10  suspects=4  steps_left=40
+    Step 54: INSPECT acc_0658                    flagged=6/10  suspects=4  steps_left=38
+    Step 55: FLAG acc_0658                       flagged=7/10  suspects=3  steps_left=38
+    Step 56: INSPECT acc_0290                    flagged=7/10  suspects=3  steps_left=37
+    Step 57: FLAG acc_0290                       flagged=8/10  suspects=2  steps_left=37
+    Step 58: INSPECT acc_0124                    flagged=8/10  suspects=2  steps_left=36
+    Step 59: FLAG acc_0124                       flagged=9/10  suspects=1  steps_left=36
+    Step 60: INSPECT acc_0507                    flagged=9/10  suspects=1  steps_left=35
+    Step 61: FLAG acc_0507                       flagged=10/10  suspects=0  steps_left=35
+    Step 62: INSPECT acc_0855                    flagged=10/10  suspects=0  steps_left=34
+    Step 63: INSPECT acc_0739                    flagged=10/10  suspects=0  steps_left=33
+    Step 64: INSPECT acc_0050                    flagged=10/10  suspects=0  steps_left=32
+    Step 65: INSPECT acc_0258                    flagged=10/10  suspects=0  steps_left=31
+    Step 66: INSPECT acc_0663                    flagged=10/10  suspects=0  steps_left=30
+    Step 67: INSPECT acc_0674                    flagged=10/10  suspects=0  steps_left=29
+    Step 68: INSPECT acc_0811                    flagged=10/10  suspects=0  steps_left=28
+    Step 69: INSPECT acc_0761                    flagged=10/10  suspects=0  steps_left=26
+    Step 70: INSPECT acc_0931                    flagged=0/10  suspects=0  steps_left=30
+    Step 71: INSPECT acc_0043                    flagged=0/10  suspects=0  steps_left=29
+    Step 72: FLAG acc_0043                       flagged=1/10  suspects=8  steps_left=29
+    Step 73: INSPECT acc_0036                    flagged=1/10  suspects=8  steps_left=28
+    Step 74: INSPECT acc_0001                    flagged=1/10  suspects=8  steps_left=27
+    Step 75: INSPECT acc_0014                    flagged=1/10  suspects=8  steps_left=26
+    Step 76: INSPECT acc_0012                    flagged=1/10  suspects=8  steps_left=25
+    Step 77: INSPECT acc_0000                    flagged=1/10  suspects=8  steps_left=24
+    Step 78: INSPECT acc_0027                    flagged=1/10  suspects=8  steps_left=23
+    Step 79: INSPECT acc_0047                    flagged=1/10  suspects=8  steps_left=22
+    Step 80: INSPECT acc_0007                    flagged=1/10  suspects=8  steps_left=21
+    Step 81: FLAG acc_0001                       flagged=2/10  suspects=8  steps_left=21
+    Step 82: INSPECT acc_0028                    flagged=2/10  suspects=8  steps_left=20
+    Step 83: FLAG acc_0027                       flagged=3/10  suspects=7  steps_left=20
+    Step 84: FLAG acc_0047                       flagged=4/10  suspects=6  steps_left=20
+    Step 85: FLAG acc_0014                       flagged=5/10  suspects=5  steps_left=20
+    Step 86: FLAG acc_0007                       flagged=6/10  suspects=4  steps_left=20
+    Step 87: FLAG acc_0000                       flagged=7/10  suspects=3  steps_left=20
+    Step 88: FLAG acc_0012                       flagged=8/10  suspects=2  steps_left=20
+    Step 89: FLAG acc_0036                       flagged=9/10  suspects=1  steps_left=20
+    Step 90: FLAG acc_0028                       flagged=10/10  suspects=0  steps_left=20
+    Step 91: INSPECT acc_0035                    flagged=10/10  suspects=0  steps_left=19
+    Step 92: INSPECT acc_0022                    flagged=10/10  suspects=0  steps_left=18
+    Step 93: INSPECT acc_0041                    flagged=10/10  suspects=0  steps_left=16
+    Step 94: INSPECT acc_0029                    flagged=10/10  suspects=0  steps_left=15
+    Step 95: INSPECT acc_0018                    flagged=10/10  suspects=0  steps_left=14
+    Step 96: INSPECT acc_0019                    flagged=10/10  suspects=0  steps_left=13
+    Step 97: INSPECT acc_0040                    flagged=10/10  suspects=0  steps_left=12
+    Step 98: INSPECT acc_0026                    flagged=10/10  suspects=0  steps_left=11
+    Step 99: INSPECT acc_0009                    flagged=10/10  suspects=0  steps_left=10
+    Step 100: INSPECT acc_0021                    flagged=0/10  suspects=0  steps_left=29
+    Step 101: FLAG acc_0021                       flagged=1/10  suspects=8  steps_left=29
+    Step 102: INSPECT acc_0047                    flagged=1/10  suspects=8  steps_left=27
+    Step 103: INSPECT acc_0002                    flagged=1/10  suspects=8  steps_left=25
+    Step 104: INSPECT acc_0015                    flagged=1/10  suspects=8  steps_left=24
+    Step 105: INSPECT acc_0009                    flagged=1/10  suspects=8  steps_left=22
+    Step 106: INSPECT acc_0029                    flagged=2/10  suspects=8  steps_left=21
+    Step 107: FLAG acc_0029                       flagged=3/10  suspects=7  steps_left=21
+    Step 108: INSPECT acc_0048                    flagged=3/10  suspects=7  steps_left=20
+    Step 109: FLAG acc_0009                       flagged=4/10  suspects=6  steps_left=20
+    Step 110: INSPECT acc_0005                    flagged=4/10  suspects=6  steps_left=18
+    Step 111: INSPECT acc_0046                    flagged=5/10  suspects=5  steps_left=17
+    Step 112: FLAG acc_0005                       flagged=6/10  suspects=4  steps_left=17
+    Step 113: FLAG acc_0046                       flagged=7/10  suspects=3  steps_left=17
+    Step 114: FLAG acc_0015                       flagged=8/10  suspects=2  steps_left=17
+    Step 115: FLAG acc_0002                       flagged=9/10  suspects=1  steps_left=17
+    Step 116: INSPECT acc_0014                    flagged=9/10  suspects=1  steps_left=15
+    Step 117: FLAG acc_0014                       flagged=10/10  suspects=0  steps_left=15
+    Step 118: INSPECT acc_0003                    flagged=10/10  suspects=0  steps_left=14
+    Step 119: INSPECT acc_0049                    flagged=10/10  suspects=0  steps_left=13
+    Step 120: INSPECT acc_0006                    flagged=10/10  suspects=0  steps_left=12
+    Step 121: INSPECT acc_0036                    flagged=0/10  suspects=0  steps_left=29
+    Step 122: INSPECT acc_0040                    flagged=0/10  suspects=0  steps_left=28
+    Step 123: INSPECT acc_0017                    flagged=0/10  suspects=0  steps_left=27
+    Step 124: INSPECT acc_0025                    flagged=0/10  suspects=0  steps_left=26
+    Step 125: INSPECT acc_0026                    flagged=0/10  suspects=0  steps_left=25
+    Step 126: INSPECT acc_0038                    flagged=0/10  suspects=0  steps_left=24
+    Step 127: INSPECT acc_0048                    flagged=0/10  suspects=0  steps_left=23
+    Step 128: INSPECT acc_0005                    flagged=0/10  suspects=0  steps_left=22
+    Step 129: INSPECT acc_0018                    flagged=0/10  suspects=0  steps_left=21
+    Step 130: INSPECT acc_0047                    flagged=0/10  suspects=0  steps_left=20
+    Step 131: INSPECT acc_0045                    flagged=0/10  suspects=0  steps_left=19
+    Step 132: INSPECT acc_0033                    flagged=0/10  suspects=0  steps_left=18
+    Step 133: FLAG acc_0033                       flagged=1/10  suspects=9  steps_left=17
+    Step 134: INSPECT acc_0029                    flagged=1/10  suspects=9  steps_left=16
+    Step 135: FLAG acc_0029                       flagged=2/10  suspects=8  steps_left=16
+    Step 136: INSPECT acc_0006                    flagged=2/10  suspects=8  steps_left=15
+    Step 137: INSPECT acc_0035                    flagged=2/10  suspects=8  steps_left=14
+    Step 138: INSPECT acc_0009                    flagged=2/10  suspects=8  steps_left=13
+    Step 139: INSPECT acc_0049                    flagged=2/10  suspects=8  steps_left=12
+    Step 140: INSPECT acc_0024                    flagged=2/10  suspects=8  steps_left=11
+    Step 141: INSPECT acc_0015                    flagged=2/10  suspects=8  steps_left=10
+    Step 142: INSPECT acc_0022                    flagged=2/10  suspects=8  steps_left=9
+    Step 143: FLAG acc_0006                       flagged=3/10  suspects=7  steps_left=9
+    Step 144: FLAG acc_0009                       flagged=4/10  suspects=6  steps_left=9
+    Step 145: INSPECT acc_0004                    flagged=4/10  suspects=6  steps_left=8
+    Step 146: FLAG acc_0022                       flagged=5/10  suspects=5  steps_left=8
+    Step 147: FLAG acc_0024                       flagged=6/10  suspects=4  steps_left=8
+    Step 148: FLAG acc_0015                       flagged=7/10  suspects=3  steps_left=7
+    Step 149: FLAG acc_0035                       flagged=8/10  suspects=2  steps_left=7
+    Step 150: FLAG acc_0004                       flagged=9/10  suspects=1  steps_left=7
+    Step 151: FLAG acc_0049                       flagged=10/10  suspects=0  steps_left=7
+    Step 152: INSPECT acc_0042                    flagged=10/10  suspects=0  steps_left=6
+    Step 153: INSPECT acc_0027                    flagged=10/10  suspects=0  steps_left=5
+    Step 154: INSPECT acc_0046                    flagged=10/10  suspects=0  steps_left=4
+    Step 155: INSPECT acc_0001                    flagged=10/10  suspects=0  steps_left=3
+    Step 156: INSPECT acc_0012                    flagged=10/10  suspects=0  steps_left=2
+    Step 157: INSPECT acc_0028                    flagged=10/10  suspects=0  steps_left=1
+    Step 158: INSPECT acc_0016                    flagged=10/10  suspects=0  steps_left=0
+    → Episode ended: [WIN] TP=10 FP=0 FN=0 Recall=1.00 Precision=1.00 Episode reward=15.70
+    ★ GRADER SCORE: 0.9000
+
+  --- LLM Agent: task=medium, seed=0, model=Bedrock/google.gemma-3-12b-it ---
+    Step  1: INSPECT acc_0008                    flagged=0/10  suspects=0  steps_left=49
+    Step  2: INSPECT acc_0074                    flagged=0/10  suspects=0  steps_left=48
+    Step  3: INSPECT acc_0179                    flagged=0/10  suspects=0  steps_left=49
+    Step  4: INSPECT acc_0008                    flagged=0/10  suspects=0  steps_left=48
+    Step  5: INSPECT acc_0074                    flagged=0/10  suspects=0  steps_left=47
+    Step  6: INSPECT acc_0096                    flagged=0/10  suspects=0  steps_left=49
+    Step  7: INSPECT acc_0008                    flagged=0/10  suspects=0  steps_left=78
+    Step  8: INSPECT acc_0074                    flagged=0/10  suspects=0  steps_left=30
+    Step  9: INSPECT acc_0043                    flagged=0/10  suspects=0  steps_left=28
+    Step 10: FLAG acc_0043                       flagged=1/10  suspects=8  steps_left=27
+    Step 11: INSPECT acc_0036                    flagged=1/10  suspects=8  steps_left=26
+    Step 12: INSPECT acc_0047                    flagged=1/10  suspects=8  steps_left=25
+    Step 13: INSPECT acc_0007                    flagged=1/10  suspects=8  steps_left=23
+    Step 14: INSPECT acc_0001                    flagged=2/10  suspects=8  steps_left=22
+    Step 15: INSPECT acc_0014                    flagged=2/10  suspects=8  steps_left=20
+    Step 16: INSPECT acc_0012                    flagged=2/10  suspects=8  steps_left=19
+    Step 17: FLAG acc_0000                       flagged=4/10  suspects=6  steps_left=19
+    Step 18: FLAG acc_0001                       flagged=5/10  suspects=5  steps_left=19
+    Step 19: FLAG acc_0014                       flagged=6/10  suspects=4  steps_left=18
+    Step 20: FLAG acc_0027                       flagged=8/10  suspects=2  steps_left=18
+    Step 21: FLAG acc_0012                       flagged=9/10  suspects=1  steps_left=18
+    Step 22: FLAG acc_0007                       flagged=10/10  suspects=0  steps_left=18
+    Step 23: INSPECT acc_0035                    flagged=10/10  suspects=0  steps_left=17
+    Step 24: INSPECT acc_0022                    flagged=0/10  suspects=0  steps_left=49
+    Step 25: FLAG acc_0022                       flagged=1/10  suspects=9  steps_left=48
+    Step 26: INSPECT acc_0144                    flagged=1/10  suspects=9  steps_left=46
+    Step 27: INSPECT acc_0131                    flagged=2/10  suspects=8  steps_left=43
+    Step 28: FLAG acc_0131                       flagged=3/10  suspects=7  steps_left=42
+    Step 29: INSPECT acc_0181                    flagged=3/10  suspects=7  steps_left=40
+    Step 30: FLAG acc_0181                       flagged=4/10  suspects=6  steps_left=39
+    Step 31: INSPECT acc_0172                    flagged=4/10  suspects=6  steps_left=38
+    Step 32: FLAG acc_0172                       flagged=5/10  suspects=5  steps_left=38
+    Step 33: INSPECT acc_0092                    flagged=5/10  suspects=5  steps_left=37
+    Step 34: FLAG acc_0092                       flagged=6/10  suspects=4  steps_left=36
+    Step 35: INSPECT acc_0097                    flagged=6/10  suspects=4  steps_left=34
+    Step 36: FLAG acc_0097                       flagged=7/10  suspects=3  steps_left=34
+    Step 37: INSPECT acc_0187                    flagged=7/10  suspects=3  steps_left=32
+    Step 38: FLAG acc_0187                       flagged=8/10  suspects=2  steps_left=32
+    Step 39: INSPECT acc_0058                    flagged=8/10  suspects=2  steps_left=31
+    Step 40: FLAG acc_0058                       flagged=9/10  suspects=1  steps_left=30
+    Step 41: INSPECT acc_0093                    flagged=9/10  suspects=1  steps_left=29
+    Step 42: FLAG acc_0093                       flagged=10/10  suspects=0  steps_left=29
+    Step 43: INSPECT acc_0074                    flagged=10/10  suspects=0  steps_left=28
+    Step 44: INSPECT acc_0179                    flagged=10/10  suspects=0  steps_left=27
+    Step 45: INSPECT acc_0096                    flagged=10/10  suspects=0  steps_left=26
+    Step 46: INSPECT acc_0177                    flagged=0/10  suspects=0  steps_left=49
+    Step 47: INSPECT acc_0171                    flagged=0/10  suspects=0  steps_left=48
+    Step 48: INSPECT acc_0099                    flagged=0/10  suspects=0  steps_left=46
+    Step 49: INSPECT acc_0152                    flagged=0/10  suspects=0  steps_left=44
+    Step 50: INSPECT acc_0092                    flagged=0/10  suspects=0  steps_left=43
+    Step 51: INSPECT acc_0078                    flagged=0/10  suspects=0  steps_left=41
+    Step 52: INSPECT acc_0112                    flagged=0/10  suspects=0  steps_left=40
+    Step 53: INSPECT acc_0012                    flagged=0/10  suspects=0  steps_left=38
+    Step 54: FLAG acc_0012                       flagged=1/10  suspects=8  steps_left=37
+    Step 55: INSPECT acc_0033                    flagged=1/10  suspects=8  steps_left=36
+    Step 56: FLAG acc_0033                       flagged=2/10  suspects=8  steps_left=36
+    Step 57: INSPECT acc_0174                    flagged=2/10  suspects=8  steps_left=35
+    Step 58: FLAG acc_0174                       flagged=3/10  suspects=7  steps_left=34
+    Step 59: INSPECT acc_0187                    flagged=3/10  suspects=7  steps_left=33
+    Step 60: FLAG acc_0187                       flagged=4/10  suspects=6  steps_left=33
+    Step 61: INSPECT acc_0079                    flagged=4/10  suspects=6  steps_left=32
+    Step 62: FLAG acc_0079                       flagged=5/10  suspects=5  steps_left=32
+    Step 63: INSPECT acc_0032                    flagged=5/10  suspects=5  steps_left=31
+    Step 64: FLAG acc_0032                       flagged=6/10  suspects=4  steps_left=31
+    Step 65: INSPECT acc_0023                    flagged=6/10  suspects=4  steps_left=30
+    Step 66: FLAG acc_0023                       flagged=7/10  suspects=3  steps_left=30
+    Step 67: INSPECT acc_0146                    flagged=7/10  suspects=3  steps_left=29
+    Step 68: FLAG acc_0146                       flagged=8/10  suspects=2  steps_left=29
+    Step 69: INSPECT acc_0019                    flagged=8/10  suspects=2  steps_left=28
+    Step 70: FLAG acc_0019                       flagged=9/10  suspects=1  steps_left=28
+    Step 71: INSPECT acc_0131                    flagged=9/10  suspects=1  steps_left=27
+    Step 72: FLAG acc_0131                       flagged=10/10  suspects=0  steps_left=27
+    Step 73: INSPECT acc_0168                    flagged=10/10  suspects=0  steps_left=26
+    Step 74: INSPECT acc_0198                    flagged=10/10  suspects=0  steps_left=25
+    Step 75: INSPECT acc_0186                    flagged=10/10  suspects=0  steps_left=23
+    Step 76: INSPECT acc_0123                    flagged=0/10  suspects=0  steps_left=49
+    Step 77: INSPECT acc_0189                    flagged=0/10  suspects=0  steps_left=48
+    Step 78: INSPECT acc_0107                    flagged=0/10  suspects=0  steps_left=46
+    Step 79: INSPECT acc_0175                    flagged=0/10  suspects=0  steps_left=44
+    Step 80: INSPECT acc_0030                    flagged=0/10  suspects=0  steps_left=42
+    Step 81: INSPECT acc_0041                    flagged=0/10  suspects=0  steps_left=41
+    Step 82: INSPECT acc_0054                    flagged=0/10  suspects=0  steps_left=39
+    Step 83: INSPECT acc_0199                    flagged=0/10  suspects=0  steps_left=37
+    Step 84: INSPECT acc_0181                    flagged=0/10  suspects=0  steps_left=36
+    Step 85: INSPECT acc_0166                    flagged=0/10  suspects=0  steps_left=34
+    Step 86: INSPECT acc_0098                    flagged=0/10  suspects=0  steps_left=33
+    Step 87: INSPECT acc_0082                    flagged=0/10  suspects=0  steps_left=31
+    Step 88: INSPECT acc_0052                    flagged=0/10  suspects=0  steps_left=30
+    Step 89: INSPECT acc_0074                    flagged=0/10  suspects=0  steps_left=29
+    Step 90: INSPECT acc_0141                    flagged=0/10  suspects=0  steps_left=28
+    Step 91: INSPECT acc_0184                    flagged=0/10  suspects=0  steps_left=27
+    Step 92: INSPECT acc_0058                    flagged=0/10  suspects=0  steps_left=26
+    Step 93: INSPECT acc_0013                    flagged=0/10  suspects=0  steps_left=25
+    Step 94: INSPECT acc_0113                    flagged=0/10  suspects=0  steps_left=24
+    Step 95: INSPECT acc_0121                    flagged=0/10  suspects=0  steps_left=23
+    Step 96: INSPECT acc_0053                    flagged=0/10  suspects=0  steps_left=22
+    Step 97: INSPECT acc_0103                    flagged=0/10  suspects=0  steps_left=21
+    Step 98: INSPECT acc_0000                    flagged=0/10  suspects=0  steps_left=20
+    Step 99: INSPECT acc_0168                    flagged=0/10  suspects=0  steps_left=19
+    Step 100: INSPECT acc_0040                    flagged=0/10  suspects=0  steps_left=18
+    Step 101: INSPECT acc_0149                    flagged=0/10  suspects=0  steps_left=17
+    Step 102: INSPECT acc_0064                    flagged=0/10  suspects=0  steps_left=16
+    Step 103: INSPECT acc_0016                    flagged=0/10  suspects=0  steps_left=14
+    Step 104: INSPECT acc_0105                    flagged=0/10  suspects=0  steps_left=13
+    Step 105: INSPECT acc_0035                    flagged=0/10  suspects=0  steps_left=12
+    Step 106: FLAG acc_0035                       flagged=1/10  suspects=9  steps_left=12
+    Step 107: INSPECT acc_0020                    flagged=1/10  suspects=9  steps_left=11
+    Step 108: INSPECT acc_0036                    flagged=1/10  suspects=9  steps_left=10
+    Step 109: FLAG acc_0036                       flagged=2/10  suspects=8  steps_left=10
+    Step 110: FLAG acc_0020                       flagged=3/10  suspects=7  steps_left=10
+    Step 111: INSPECT acc_0050                    flagged=3/10  suspects=7  steps_left=9
+    Step 112: FLAG acc_0050                       flagged=4/10  suspects=6  steps_left=9
+    Step 113: INSPECT acc_0051                    flagged=4/10  suspects=6  steps_left=8
+    Step 114: FLAG acc_0051                       flagged=5/10  suspects=5  steps_left=8
+    Step 115: INSPECT acc_0085                    flagged=5/10  suspects=5  steps_left=7
+    Step 116: FLAG acc_0085                       flagged=6/10  suspects=4  steps_left=7
+    Step 117: INSPECT acc_0177                    flagged=6/10  suspects=4  steps_left=6
+    Step 118: FLAG acc_0177                       flagged=7/10  suspects=3  steps_left=6
+    Step 119: INSPECT acc_0170                    flagged=7/10  suspects=3  steps_left=5
+    Step 120: FLAG acc_0170                       flagged=8/10  suspects=2  steps_left=5
+    Step 121: INSPECT acc_0094                    flagged=8/10  suspects=2  steps_left=4
+    Step 122: FLAG acc_0094                       flagged=9/10  suspects=1  steps_left=4
+    Step 123: INSPECT acc_0055                    flagged=9/10  suspects=1  steps_left=3
+    Step 124: FLAG acc_0055                       flagged=10/10  suspects=0  steps_left=3
+    Step 125: INSPECT acc_0185                    flagged=10/10  suspects=0  steps_left=2
+    Step 126: INSPECT acc_0192                    flagged=10/10  suspects=0  steps_left=1
+    Step 127: INSPECT acc_0099                    flagged=10/10  suspects=0  steps_left=0
+    → Episode ended: [WIN] TP=10 FP=0 FN=0 Recall=1.00 Precision=1.00 Episode reward=15.50
+    ★ GRADER SCORE: 0.9000
+
+  --- LLM Agent: task=hard, seed=0, model=Bedrock/google.gemma-3-12b-it ---
+    Step  1: INSPECT acc_0704                    flagged=0/10  suspects=0  steps_left=79
+    Step  2: INSPECT acc_0289                    flagged=0/10  suspects=0  steps_left=78
+    Step  3: INSPECT acc_0826                    flagged=0/10  suspects=0  steps_left=77
+    Step  4: INSPECT acc_0927                    flagged=0/10  suspects=0  steps_left=76
+    Step  5: INSPECT acc_0441                    flagged=0/10  suspects=0  steps_left=75
+    Step  6: INSPECT acc_0871                    flagged=0/10  suspects=0  steps_left=74
+    Step  7: INSPECT acc_0880                    flagged=0/10  suspects=0  steps_left=73
+    Step  8: INSPECT acc_0652                    flagged=0/10  suspects=0  steps_left=72
+    Step  9: INSPECT acc_0939                    flagged=0/10  suspects=0  steps_left=71
+    Step 10: INSPECT acc_0070                    flagged=0/10  suspects=0  steps_left=49
+    Step 11: INSPECT acc_0008                    flagged=0/10  suspects=0  steps_left=29
+    Step 12: INSPECT acc_0043                    flagged=0/10  suspects=0  steps_left=28
+    Step 13: FLAG acc_0043                       flagged=1/10  suspects=8  steps_left=27
+    Step 14: INSPECT acc_0036                    flagged=1/10  suspects=8  steps_left=26
+    Step 15: FLAG acc_0036                       flagged=2/10  suspects=8  steps_left=25
+    Step 16: INSPECT acc_0047                    flagged=2/10  suspects=8  steps_left=23
+    Step 17: FLAG acc_0047                       flagged=3/10  suspects=7  steps_left=23
+    Step 18: INSPECT acc_0007                    flagged=3/10  suspects=7  steps_left=21
+    Step 19: FLAG acc_0007                       flagged=4/10  suspects=6  steps_left=21
+    Step 20: INSPECT acc_0001                    flagged=4/10  suspects=6  steps_left=19
+    Step 21: FLAG acc_0001                       flagged=5/10  suspects=5  steps_left=19
+    Step 22: INSPECT acc_0014                    flagged=5/10  suspects=5  steps_left=17
+    Step 23: FLAG acc_0014                       flagged=6/10  suspects=4  steps_left=17
+    Step 24: INSPECT acc_0012                    flagged=6/10  suspects=4  steps_left=15
+    Step 25: FLAG acc_0012                       flagged=7/10  suspects=3  steps_left=15
+    Step 26: INSPECT acc_0000                    flagged=7/10  suspects=3  steps_left=13
+    Step 27: FLAG acc_0000                       flagged=8/10  suspects=2  steps_left=13
+    Step 28: INSPECT acc_0027                    flagged=8/10  suspects=2  steps_left=11
+    Step 29: FLAG acc_0027                       flagged=9/10  suspects=1  steps_left=11
+    Step 30: INSPECT acc_0028                    flagged=9/10  suspects=1  steps_left=9
+    Step 31: FLAG acc_0028                       flagged=10/10  suspects=0  steps_left=9
+    Step 32: INSPECT acc_0035                    flagged=0/10  suspects=0  steps_left=49
+    Step 33: INSPECT acc_0008                    flagged=0/10  suspects=0  steps_left=47
+    Step 34: INSPECT acc_0074                    flagged=0/10  suspects=0  steps_left=46
+    Step 35: INSPECT acc_0179                    flagged=0/10  suspects=0  steps_left=44
+    Step 36: INSPECT acc_0096                    flagged=0/10  suspects=0  steps_left=42
+    Step 37: INSPECT acc_0177                    flagged=0/10  suspects=0  steps_left=40
+    Step 38: INSPECT acc_0122                    flagged=0/10  suspects=0  steps_left=38
+    Step 39: INSPECT acc_0189                    flagged=0/10  suspects=0  steps_left=36
+    Step 40: INSPECT acc_0174                    flagged=0/10  suspects=0  steps_left=34
+    Step 41: INSPECT acc_0144                    flagged=0/10  suspects=0  steps_left=32
+    Step 42: FLAG acc_0144                       flagged=1/10  suspects=9  steps_left=31
+    Step 43: INSPECT acc_0131                    flagged=1/10  suspects=9  steps_left=30
+    Step 44: FLAG acc_0131                       flagged=2/10  suspects=8  steps_left=29
+    Step 45: INSPECT acc_0181                    flagged=2/10  suspects=8  steps_left=28
+    Step 46: INSPECT acc_0022                    flagged=2/10  suspects=8  steps_left=26
+    Step 47: FLAG acc_0022                       flagged=4/10  suspects=6  steps_left=26
+    Step 48: INSPECT acc_0092                    flagged=4/10  suspects=6  steps_left=25
+    Step 49: FLAG acc_0092                       flagged=5/10  suspects=5  steps_left=24
+    Step 50: INSPECT acc_0097                    flagged=5/10  suspects=5  steps_left=23
+    Step 51: FLAG acc_0097                       flagged=6/10  suspects=4  steps_left=22
+    Step 52: INSPECT acc_0187                    flagged=6/10  suspects=4  steps_left=21
+    Step 53: FLAG acc_0187                       flagged=7/10  suspects=3  steps_left=20
+    Step 54: INSPECT acc_0093                    flagged=7/10  suspects=3  steps_left=18
+    Step 55: FLAG acc_0093                       flagged=8/10  suspects=2  steps_left=18
+    Step 56: INSPECT acc_0172                    flagged=8/10  suspects=2  steps_left=16
+    Step 57: FLAG acc_0172                       flagged=9/10  suspects=1  steps_left=16
+    Step 58: INSPECT acc_0058                    flagged=9/10  suspects=1  steps_left=15
+    Step 59: FLAG acc_0058                       flagged=10/10  suspects=0  steps_left=14
+    Step 60: INSPECT acc_0148                    flagged=10/10  suspects=0  steps_left=14
+    [RETRY] Network error: HTTP Error 400: Bad Request — retrying in 3s (1/3)
+    [RETRY] Network error: HTTP Error 400: Bad Request — retrying in 6s (2/3)
+Traceback (most recent call last):
+  File "/home/ubuntu/meta/meta-hack-26/gemma_test_judge_eval.py", line 530, in <module>
+    scores = test_llm_all_tasks(base)
+             ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/meta/meta-hack-26/gemma_test_judge_eval.py", line 441, in test_llm_all_
+tasks
+    scores[task] = test_llm_agent(base_url, task=task, seed=0)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/meta/meta-hack-26/gemma_test_judge_eval.py", line 426, in test_llm_agen
+t
+    grader = http_get(f"{base_url}/grader")
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/meta/meta-hack-26/gemma_test_judge_eval.py", line 116, in http_get
+    return _retry(_do)
+           ^^^^^^^^^^^
+  File "/home/ubuntu/meta/meta-hack-26/gemma_test_judge_eval.py", line 85, in _retry
+    return fn()
+           ^^^^
+  File "/home/ubuntu/meta/meta-hack-26/gemma_test_judge_eval.py", line 110, in _do
+    with urllib.request.urlopen(url, timeout=120) as resp:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/urllib/request.py", line 215, in urlopen
+    return opener.open(url, data, timeout)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/urllib/request.py", line 521, in open
+    response = meth(req, response)
+               ^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/urllib/request.py", line 630, in http_response
+    response = self.parent.error(
+               ^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/urllib/request.py", line 559, in error
+    return self._call_chain(*args)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/urllib/request.py", line 492, in _call_chain
+    result = func(*args)
+             ^^^^^^^^^^^
+  File "/usr/lib/python3.12/urllib/request.py", line 639, in http_error_default
+    raise HTTPError(req.full_url, code, msg, hdrs, fp)
+urllib.error.HTTPError: HTTP Error 400: Bad Request
+ubuntu@ip-172-31-33-59:~/meta/meta-hack-26$ python3 gemma_test_judge_eval.py --url https://p
+andago-graphstrike.hf.space --bedrock
+GraphStrike Judge Evaluation Simulator
+Target:  https://pandago-graphstrike.hf.space
+Backend: bedrock
+Model:   Bedrock/google.gemma-3-12b-it
+Token:   set
+
+============================================================
+PHASE 0: Endpoint Verification
+============================================================
+  ✓ GET /health
+  ✓ GET /tasks
+  ✓ GET /metadata
+  ✓ GET /schema
+  ✓ GET /web
+  ✓ POST /reset
+  ✓ GET /state
+  ✓ POST /step
+  ✓ POST /step
+  ✓ GET /grader
+  ✓ POST /mcp
+  ✓ POST /baseline
+
+============================================================
+PHASE 1: Baseline Stability (3 runs)
+============================================================
+  Run 1: easy=0.9100  medium=0.9060  hard=0.9038
+  Run 2: easy=0.9100  medium=0.9060  hard=0.9038
+  Run 3: easy=0.9100  medium=0.9060  hard=0.9038
+  ✓ All 3 runs identical — baseline is deterministic
+
+============================================================
+PHASE 2: LLM Agent Evaluation (model=Bedrock/google.gemma-3-12b-it)
+============================================================
+
+  --- LLM Agent: task=easy, seed=0, model=Bedrock/google.gemma-3-12b-it ---
+    Step  1: INSPECT acc_0043                    flagged=0/10  suspects=0  steps_left=29
+    Step  2: FLAG acc_0043                       flagged=1/10  suspects=8  steps_left=29
+    Step  3: INSPECT acc_0036                    flagged=1/10  suspects=8  steps_left=28
+    Step  4: INSPECT acc_0001                    flagged=1/10  suspects=8  steps_left=27
+    Step  5: INSPECT acc_0014                    flagged=1/10  suspects=8  steps_left=26
+    Step  6: INSPECT acc_0012                    flagged=1/10  suspects=8  steps_left=25
+    Step  7: INSPECT acc_0000                    flagged=1/10  suspects=8  steps_left=24
+    Step  8: INSPECT acc_0027                    flagged=1/10  suspects=8  steps_left=23
+    Step  9: INSPECT acc_0047                    flagged=1/10  suspects=8  steps_left=22
+    Step 10: INSPECT acc_0007                    flagged=1/10  suspects=8  steps_left=21
+    Step 11: FLAG acc_0001                       flagged=2/10  suspects=8  steps_left=21
+    Step 12: INSPECT acc_0028                    flagged=2/10  suspects=8  steps_left=20
+    Step 13: FLAG acc_0027                       flagged=3/10  suspects=7  steps_left=20
+    Step 14: FLAG acc_0047                       flagged=4/10  suspects=6  steps_left=20
+    Step 15: FLAG acc_0014                       flagged=5/10  suspects=5  steps_left=20
+    Step 16: FLAG acc_0007                       flagged=6/10  suspects=4  steps_left=20
+    Step 17: FLAG acc_0000                       flagged=7/10  suspects=3  steps_left=20
+    Step 18: FLAG acc_0012                       flagged=8/10  suspects=2  steps_left=20
+    Step 19: FLAG acc_0036                       flagged=9/10  suspects=1  steps_left=20
+    Step 20: FLAG acc_0028                       flagged=10/10  suspects=0  steps_left=20
+    Step 21: INSPECT acc_0035                    flagged=10/10  suspects=0  steps_left=19
+    Step 22: INSPECT acc_0022                    flagged=10/10  suspects=0  steps_left=18
+    Step 23: INSPECT acc_0041                    flagged=10/10  suspects=0  steps_left=17
+    Step 24: INSPECT acc_0029                    flagged=10/10  suspects=0  steps_left=16
+    Step 25: INSPECT acc_0018                    flagged=10/10  suspects=0  steps_left=15
+    Step 26: INSPECT acc_0019                    flagged=10/10  suspects=0  steps_left=14
+    Step 27: INSPECT acc_0040                    flagged=10/10  suspects=0  steps_left=13
+    Step 28: INSPECT acc_0026                    flagged=10/10  suspects=0  steps_left=12
+    Step 29: INSPECT acc_0009                    flagged=10/10  suspects=0  steps_left=11
+    Step 30: INSPECT acc_0021                    flagged=10/10  suspects=0  steps_left=10
+    Step 31: INSPECT acc_0033                    flagged=10/10  suspects=0  steps_left=9
+    Step 32: INSPECT acc_0044                    flagged=10/10  suspects=0  steps_left=8
+    Step 33: INSPECT acc_0002                    flagged=10/10  suspects=0  steps_left=7
+    Step 34: INSPECT acc_0037                    flagged=10/10  suspects=0  steps_left=6
+    Step 35: INSPECT acc_0034                    flagged=10/10  suspects=0  steps_left=5
+    Step 36: INSPECT acc_0008                    flagged=10/10  suspects=0  steps_left=4
+    Step 37: INSPECT acc_0038                    flagged=10/10  suspects=0  steps_left=3
+    Step 38: INSPECT acc_0048                    flagged=10/10  suspects=0  steps_left=2
+    Step 39: INSPECT acc_0039                    flagged=10/10  suspects=0  steps_left=1
+    Step 40: INSPECT acc_0015                    flagged=10/10  suspects=0  steps_left=0
+    → Episode ended: [WIN] TP=10 FP=0 FN=0 Recall=1.00 Precision=1.00 Episode reward=15.70
+    ★ GRADER SCORE: 0.9000
+
+  --- LLM Agent: task=medium, seed=0, model=Bedrock/google.gemma-3-12b-it ---
+    Step  1: INSPECT acc_0008                    flagged=0/10  suspects=0  steps_left=49
+    Step  2: INSPECT acc_0074                    flagged=0/10  suspects=0  steps_left=48
+    Step  3: INSPECT acc_0179                    flagged=0/10  suspects=0  steps_left=47
+    Step  4: INSPECT acc_0096                    flagged=0/10  suspects=0  steps_left=46
+    Step  5: INSPECT acc_0177                    flagged=0/10  suspects=0  steps_left=45
+    Step  6: INSPECT acc_0122                    flagged=0/10  suspects=0  steps_left=44
+    Step  7: INSPECT acc_0189                    flagged=0/10  suspects=0  steps_left=43
+    Step  8: INSPECT acc_0174                    flagged=0/10  suspects=0  steps_left=42
+    Step  9: INSPECT acc_0144                    flagged=0/10  suspects=0  steps_left=41
+    Step 10: FLAG acc_0144                       flagged=1/10  suspects=8  steps_left=41
+    Step 11: INSPECT acc_0181                    flagged=1/10  suspects=8  steps_left=40
+    Step 12: FLAG acc_0181                       flagged=2/10  suspects=8  steps_left=40
+    Step 13: INSPECT acc_0022                    flagged=2/10  suspects=8  steps_left=39
+    Step 14: FLAG acc_0022                       flagged=3/10  suspects=7  steps_left=39
+    Step 15: INSPECT acc_0092                    flagged=3/10  suspects=7  steps_left=38
+    Step 16: FLAG acc_0092                       flagged=4/10  suspects=6  steps_left=38
+    Step 17: INSPECT acc_0097                    flagged=4/10  suspects=6  steps_left=37
+    Step 18: FLAG acc_0097                       flagged=5/10  suspects=5  steps_left=37
+    Step 19: INSPECT acc_0187                    flagged=5/10  suspects=5  steps_left=36
+    Step 20: FLAG acc_0187                       flagged=6/10  suspects=4  steps_left=36
+    Step 21: INSPECT acc_0093                    flagged=6/10  suspects=4  steps_left=35
+    Step 22: FLAG acc_0093                       flagged=7/10  suspects=3  steps_left=35
+    Step 23: INSPECT acc_0172                    flagged=7/10  suspects=3  steps_left=34
+    Step 24: FLAG acc_0172                       flagged=8/10  suspects=2  steps_left=34
+    Step 25: INSPECT acc_0058                    flagged=8/10  suspects=2  steps_left=33
+    Step 26: FLAG acc_0058                       flagged=9/10  suspects=1  steps_left=33
+    Step 27: INSPECT acc_0131                    flagged=9/10  suspects=1  steps_left=32
+    Step 28: FLAG acc_0131                       flagged=10/10  suspects=0  steps_left=32
+    Step 29: INSPECT acc_0148                    flagged=10/10  suspects=0  steps_left=31
+    Step 30: INSPECT acc_0078                    flagged=10/10  suspects=0  steps_left=30
+    Step 31: INSPECT acc_0129                    flagged=10/10  suspects=0  steps_left=29
+    Step 32: INSPECT acc_0021                    flagged=10/10  suspects=0  steps_left=28
+    Step 33: INSPECT acc_0065                    flagged=10/10  suspects=0  steps_left=27
+    Step 34: INSPECT acc_0031                    flagged=10/10  suspects=0  steps_left=26
+    Step 35: INSPECT acc_0155                    flagged=10/10  suspects=0  steps_left=25
+    Step 36: INSPECT acc_0138                    flagged=10/10  suspects=0  steps_left=24
+    Step 37: INSPECT acc_0113                    flagged=10/10  suspects=0  steps_left=23
+    Step 38: INSPECT acc_0079                    flagged=10/10  suspects=0  steps_left=22
+    Step 39: INSPECT acc_0057                    flagged=10/10  suspects=0  steps_left=21
+    Step 40: INSPECT acc_0150                    flagged=10/10  suspects=0  steps_left=20
+    Step 41: INSPECT acc_0094                    flagged=10/10  suspects=0  steps_left=19
+    Step 42: INSPECT acc_0167                    flagged=10/10  suspects=0  steps_left=18
+    Step 43: INSPECT acc_0192                    flagged=10/10  suspects=0  steps_left=17
+    Step 44: INSPECT acc_0196                    flagged=10/10  suspects=0  steps_left=16
+    Step 45: INSPECT acc_0024                    flagged=10/10  suspects=0  steps_left=15
+    Step 46: INSPECT acc_0118                    flagged=10/10  suspects=0  steps_left=14
+    Step 47: INSPECT acc_0160                    flagged=10/10  suspects=0  steps_left=13
+    Step 48: INSPECT acc_0119                    flagged=10/10  suspects=0  steps_left=12
+    Step 49: INSPECT acc_0049                    flagged=10/10  suspects=0  steps_left=11
+    Step 50: INSPECT acc_0099                    flagged=10/10  suspects=0  steps_left=10
+    Step 51: INSPECT acc_0000                    flagged=10/10  suspects=0  steps_left=9
+    Step 52: INSPECT acc_0105                    flagged=10/10  suspects=0  steps_left=8
+    Step 53: INSPECT acc_0014                    flagged=10/10  suspects=0  steps_left=7
+    Step 54: INSPECT acc_0020                    flagged=10/10  suspects=0  steps_left=6
+    Step 55: INSPECT acc_0111                    flagged=10/10  suspects=0  steps_left=5
+    Step 56: INSPECT acc_0114                    flagged=10/10  suspects=0  steps_left=4
+    Step 57: SUBMIT                              flagged=10/10  suspects=0  steps_left=4
+    → Episode ended: [WIN] TP=10 FP=0 FN=0 Recall=1.00 Precision=1.00 Episode reward=17.54
+    ★ GRADER SCORE: 0.9080
+
+  --- LLM Agent: task=hard, seed=0, model=Bedrock/google.gemma-3-12b-it ---
+    Step  1: INSPECT acc_0704                    flagged=0/10  suspects=0  steps_left=79
+    Step  2: INSPECT acc_0289                    flagged=0/10  suspects=0  steps_left=78
+    Step  3: INSPECT acc_0826                    flagged=0/10  suspects=0  steps_left=77
+    Step  4: INSPECT acc_0927                    flagged=0/10  suspects=0  steps_left=76
+    Step  5: INSPECT acc_0441                    flagged=0/10  suspects=0  steps_left=75
+    Step  6: INSPECT acc_0871                    flagged=0/10  suspects=0  steps_left=74
+    Step  7: INSPECT acc_0880                    flagged=0/10  suspects=0  steps_left=73
+    Step  8: INSPECT acc_0652                    flagged=0/10  suspects=0  steps_left=72
+    Step  9: INSPECT acc_0939                    flagged=0/10  suspects=0  steps_left=71
+    Step 10: INSPECT acc_0070                    flagged=0/10  suspects=0  steps_left=70
+    Step 11: INSPECT acc_0915                    flagged=0/10  suspects=0  steps_left=69
+    Step 12: INSPECT acc_0443                    flagged=0/10  suspects=0  steps_left=68
+    Step 13: INSPECT acc_0970                    flagged=0/10  suspects=0  steps_left=67
+    Step 14: INSPECT acc_0028                    flagged=0/10  suspects=0  steps_left=66
+    Step 15: INSPECT acc_0792                    flagged=0/10  suspects=0  steps_left=65
+    Step 16: INSPECT acc_0579                    flagged=0/10  suspects=0  steps_left=64
+    Step 17: INSPECT acc_0037                    flagged=0/10  suspects=0  steps_left=63
+    Step 18: INSPECT acc_0295                    flagged=0/10  suspects=0  steps_left=62
+    Step 19: INSPECT acc_0438                    flagged=0/10  suspects=0  steps_left=61
+    Step 20: INSPECT acc_0439                    flagged=0/10  suspects=0  steps_left=60
+    Step 21: FLAG acc_0439                       flagged=1/10  suspects=5  steps_left=60
+    Step 22: INSPECT acc_0237                    flagged=1/10  suspects=5  steps_left=59
+    Step 23: FLAG acc_0237                       flagged=2/10  suspects=6  steps_left=59
+    Step 24: INSPECT acc_0621                    flagged=2/10  suspects=6  steps_left=58
+    Step 25: FLAG acc_0621                       flagged=3/10  suspects=6  steps_left=58
+    Step 26: INSPECT acc_0389                    flagged=3/10  suspects=6  steps_left=57
+    Step 27: INSPECT acc_0160                    flagged=3/10  suspects=6  steps_left=56
+    Step 28: FLAG acc_0160                       flagged=4/10  suspects=6  steps_left=56
+    Step 29: INSPECT acc_0549                    flagged=4/10  suspects=6  steps_left=55
+    Step 30: FLAG acc_0549                       flagged=5/10  suspects=5  steps_left=55
+    Step 31: FLAG acc_0389                       flagged=6/10  suspects=4  steps_left=55
+    Step 32: INSPECT acc_0658                    flagged=6/10  suspects=4  steps_left=54
+    Step 33: FLAG acc_0658                       flagged=7/10  suspects=3  steps_left=54
+    Step 34: INSPECT acc_0290                    flagged=7/10  suspects=3  steps_left=53
+    Step 35: FLAG acc_0290                       flagged=8/10  suspects=2  steps_left=53
+    Step 36: INSPECT acc_0124                    flagged=8/10  suspects=2  steps_left=52
+    Step 37: FLAG acc_0124                       flagged=9/10  suspects=1  steps_left=52
+    Step 38: INSPECT acc_0507                    flagged=9/10  suspects=1  steps_left=51
+    Step 39: FLAG acc_0507                       flagged=10/10  suspects=0  steps_left=51
+    Step 40: INSPECT acc_0086                    flagged=10/10  suspects=0  steps_left=50
+    Step 41: INSPECT acc_0497                    flagged=10/10  suspects=0  steps_left=49
+    Step 42: INSPECT acc_0610                    flagged=10/10  suspects=0  steps_left=48
+    Step 43: INSPECT acc_0573                    flagged=10/10  suspects=0  steps_left=47
+    Step 44: INSPECT acc_0479                    flagged=10/10  suspects=0  steps_left=46
+    Step 45: INSPECT acc_0287                    flagged=10/10  suspects=0  steps_left=45
+    Step 46: INSPECT acc_0960                    flagged=10/10  suspects=0  steps_left=44
+    Step 47: INSPECT acc_0455                    flagged=10/10  suspects=0  steps_left=43
+    Step 48: INSPECT acc_0248                    flagged=10/10  suspects=0  steps_left=42
+    Step 49: INSPECT acc_0964                    flagged=10/10  suspects=0  steps_left=41
+    Step 50: INSPECT acc_0480                    flagged=10/10  suspects=0  steps_left=40
+    Step 51: INSPECT acc_0154                    flagged=10/10  suspects=0  steps_left=39
+    Step 52: INSPECT acc_0368                    flagged=10/10  suspects=0  steps_left=38
+    Step 53: INSPECT acc_0426                    flagged=10/10  suspects=0  steps_left=37
+    Step 54: INSPECT acc_0810                    flagged=10/10  suspects=0  steps_left=36
+    Step 55: INSPECT acc_0040                    flagged=10/10  suspects=0  steps_left=35
+    Step 56: INSPECT acc_0538                    flagged=10/10  suspects=0  steps_left=34
+    Step 57: INSPECT acc_0940                    flagged=10/10  suspects=0  steps_left=33
+    Step 58: INSPECT acc_0668                    flagged=10/10  suspects=0  steps_left=32
+    Step 59: INSPECT acc_0721                    flagged=10/10  suspects=0  steps_left=31
+    Step 60: INSPECT acc_0787                    flagged=10/10  suspects=0  steps_left=30
+    Step 61: INSPECT acc_0639                    flagged=10/10  suspects=0  steps_left=29
+    Step 62: INSPECT acc_0700                    flagged=10/10  suspects=0  steps_left=28
+    Step 63: INSPECT acc_0353                    flagged=10/10  suspects=0  steps_left=27
+    Step 64: INSPECT acc_0620                    flagged=10/10  suspects=0  steps_left=26
+    Step 65: INSPECT acc_0499                    flagged=10/10  suspects=0  steps_left=25
+    Step 66: INSPECT acc_0207                    flagged=10/10  suspects=0  steps_left=24
+    Step 67: INSPECT acc_0011                    flagged=10/10  suspects=0  steps_left=23
+    Step 68: INSPECT acc_0524                    flagged=10/10  suspects=0  steps_left=22
+    Step 69: INSPECT acc_0553                    flagged=10/10  suspects=0  steps_left=21
+    Step 70: INSPECT acc_0948                    flagged=10/10  suspects=0  steps_left=20
+    Step 71: INSPECT acc_0333                    flagged=10/10  suspects=0  steps_left=19
+    Step 72: INSPECT acc_0574                    flagged=10/10  suspects=0  steps_left=18
+    Step 73: INSPECT acc_0258                    flagged=10/10  suspects=0  steps_left=17
+    Step 74: INSPECT acc_0742                    flagged=10/10  suspects=0  steps_left=16
+    Step 75: INSPECT acc_0354                    flagged=10/10  suspects=0  steps_left=15
+    Step 76: INSPECT acc_0022                    flagged=10/10  suspects=0  steps_left=14
+    Step 77: INSPECT acc_0232                    flagged=10/10  suspects=0  steps_left=13
+    Step 78: INSPECT acc_0123                    flagged=10/10  suspects=0  steps_left=12
+    Step 79: INSPECT acc_0844                    flagged=10/10  suspects=0  steps_left=11
+    Step 80: INSPECT acc_0757                    flagged=10/10  suspects=0  steps_left=10
+    Step 81: INSPECT acc_0653                    flagged=10/10  suspects=0  steps_left=9
+    Step 82: INSPECT acc_0119                    flagged=10/10  suspects=0  steps_left=8
+    Step 83: INSPECT acc_0514                    flagged=10/10  suspects=0  steps_left=7
+    Step 84: INSPECT acc_0687                    flagged=10/10  suspects=0  steps_left=6
+    Step 85: SUBMIT                              flagged=10/10  suspects=0  steps_left=6
+    → Episode ended: [WIN] TP=10 FP=0 FN=0 Recall=1.00 Precision=1.00 Episode reward=13.26
+    ★ GRADER SCORE: 0.9075
+
+  Summary: easy=0.9000  medium=0.9080  hard=0.9075
+
+============================================================
+PHASE 3: Score Variance (seeds=[0, 1, 2])
+============================================================
+
+  --- LLM Agent: task=easy, seed=0, model=Bedrock/google.gemma-3-12b-it ---
+    Step  1: INSPECT acc_0043                    flagged=0/10  suspects=0  steps_left=29
+    Step  2: FLAG acc_0043                       flagged=1/10  suspects=8  steps_left=29
+    Step  3: INSPECT acc_0036                    flagged=1/10  suspects=8  steps_left=28
+    Step  4: INSPECT acc_0001                    flagged=1/10  suspects=8  steps_left=27
+    Step  5: INSPECT acc_0014                    flagged=1/10  suspects=8  steps_left=26
+    Step  6: INSPECT acc_0012                    flagged=1/10  suspects=8  steps_left=25
+    Step  7: INSPECT acc_0000                    flagged=1/10  suspects=8  steps_left=24
+    Step  8: INSPECT acc_0027                    flagged=1/10  suspects=8  steps_left=23
+    Step  9: INSPECT acc_0047                    flagged=1/10  suspects=8  steps_left=22
+    Step 10: INSPECT acc_0007                    flagged=1/10  suspects=8  steps_left=21
+    Step 11: FLAG acc_0001                       flagged=2/10  suspects=8  steps_left=21
+    Step 12: INSPECT acc_0028                    flagged=2/10  suspects=8  steps_left=20
+    Step 13: FLAG acc_0027                       flagged=3/10  suspects=7  steps_left=20
+    Step 14: FLAG acc_0047                       flagged=4/10  suspects=6  steps_left=20
+    Step 15: FLAG acc_0014                       flagged=5/10  suspects=5  steps_left=20
+    Step 16: FLAG acc_0007                       flagged=6/10  suspects=4  steps_left=20
+    Step 17: FLAG acc_0000                       flagged=7/10  suspects=3  steps_left=20
+    Step 18: FLAG acc_0012                       flagged=8/10  suspects=2  steps_left=20
+    Step 19: FLAG acc_0036                       flagged=9/10  suspects=1  steps_left=20
+    Step 20: FLAG acc_0028                       flagged=10/10  suspects=0  steps_left=20
+    Step 21: INSPECT acc_0035                    flagged=10/10  suspects=0  steps_left=19
+    Step 22: INSPECT acc_0022                    flagged=10/10  suspects=0  steps_left=18
+    Step 23: INSPECT acc_0041                    flagged=10/10  suspects=0  steps_left=17
+    Step 24: INSPECT acc_0029                    flagged=10/10  suspects=0  steps_left=16
+    Step 25: INSPECT acc_0018                    flagged=10/10  suspects=0  steps_left=15
+    Step 26: INSPECT acc_0019                    flagged=10/10  suspects=0  steps_left=14
+    Step 27: INSPECT acc_0040                    flagged=10/10  suspects=0  steps_left=13
+    Step 28: INSPECT acc_0026                    flagged=10/10  suspects=0  steps_left=12
+    Step 29: INSPECT acc_0009                    flagged=10/10  suspects=0  steps_left=11
+    Step 30: INSPECT acc_0021                    flagged=10/10  suspects=0  steps_left=10
+    Step 31: INSPECT acc_0033                    flagged=10/10  suspects=0  steps_left=9
+    Step 32: INSPECT acc_0044                    flagged=10/10  suspects=0  steps_left=8
+    Step 33: INSPECT acc_0002                    flagged=10/10  suspects=0  steps_left=7
+    Step 34: INSPECT acc_0037                    flagged=10/10  suspects=0  steps_left=6
+    Step 35: INSPECT acc_0034                    flagged=10/10  suspects=0  steps_left=5
+    Step 36: INSPECT acc_0008                    flagged=10/10  suspects=0  steps_left=4
+    Step 37: INSPECT acc_0038                    flagged=10/10  suspects=0  steps_left=3
+    Step 38: INSPECT acc_0048                    flagged=10/10  suspects=0  steps_left=2
+    Step 39: INSPECT acc_0039                    flagged=10/10  suspects=0  steps_left=1
+    Step 40: INSPECT acc_0015                    flagged=10/10  suspects=0  steps_left=0
+    → Episode ended: [WIN] TP=10 FP=0 FN=0 Recall=1.00 Precision=1.00 Episode reward=15.70
+    ★ GRADER SCORE: 0.9000
+
+  --- LLM Agent: task=easy, seed=1, model=Bedrock/google.gemma-3-12b-it ---
+    Step  1: INSPECT acc_0034                    flagged=0/10  suspects=0  steps_left=29
+    Step  2: INSPECT acc_0003                    flagged=0/10  suspects=0  steps_left=28
+    Step  3: INSPECT acc_0049                    flagged=0/10  suspects=0  steps_left=27
+    Step  4: INSPECT acc_0006                    flagged=0/10  suspects=0  steps_left=26
+    Step  5: INSPECT acc_0047                    flagged=0/10  suspects=0  steps_left=25
+    Step  6: FLAG acc_0047                       flagged=1/10  suspects=9  steps_left=25
+    Step  7: INSPECT acc_0009                    flagged=1/10  suspects=9  steps_left=24
+    Step  8: FLAG acc_0009                       flagged=2/10  suspects=8  steps_left=24
+    Step  9: INSPECT acc_0046                    flagged=2/10  suspects=8  steps_left=23
+    Step 10: FLAG acc_0046                       flagged=3/10  suspects=7  steps_left=23
+    Step 11: INSPECT acc_0014                    flagged=3/10  suspects=7  steps_left=22
+    Step 12: FLAG acc_0014                       flagged=4/10  suspects=6  steps_left=22
+    Step 13: INSPECT acc_0021                    flagged=4/10  suspects=6  steps_left=21
+    Step 14: FLAG acc_0021                       flagged=5/10  suspects=5  steps_left=21
+    Step 15: INSPECT acc_0002                    flagged=5/10  suspects=5  steps_left=20
+    Step 16: FLAG acc_0002                       flagged=6/10  suspects=4  steps_left=20
+    Step 17: INSPECT acc_0048                    flagged=6/10  suspects=4  steps_left=19
+    Step 18: FLAG acc_0048                       flagged=7/10  suspects=3  steps_left=19
+    Step 19: INSPECT acc_0029                    flagged=7/10  suspects=3  steps_left=18
+    Step 20: FLAG acc_0029                       flagged=8/10  suspects=2  steps_left=18
+    Step 21: INSPECT acc_0015                    flagged=8/10  suspects=2  steps_left=17
+    Step 22: FLAG acc_0015                       flagged=9/10  suspects=1  steps_left=17
+    Step 23: INSPECT acc_0005                    flagged=9/10  suspects=1  steps_left=16
+    Step 24: FLAG acc_0005                       flagged=10/10  suspects=0  steps_left=16
+    Step 25: INSPECT acc_0036                    flagged=10/10  suspects=0  steps_left=15
+    Step 26: INSPECT acc_0027                    flagged=10/10  suspects=0  steps_left=14
+    Step 27: INSPECT acc_0043                    flagged=10/10  suspects=0  steps_left=13
+    Step 28: INSPECT acc_0044                    flagged=10/10  suspects=0  steps_left=12
+    Step 29: INSPECT acc_0038                    flagged=10/10  suspects=0  steps_left=11
+    Step 30: SUBMIT                              flagged=10/10  suspects=0  steps_left=11
+    → Episode ended: [WIN] TP=10 FP=0 FN=0 Recall=1.00 Precision=1.00 Episode reward=17.81
+    ★ GRADER SCORE: 0.9367
+
+  --- LLM Agent: task=easy, seed=2, model=Bedrock/google.gemma-3-12b-it ---
+    Step  1: INSPECT acc_0040                    flagged=0/10  suspects=0  steps_left=29
+    Step  2: INSPECT acc_0017                    flagged=0/10  suspects=0  steps_left=28
+    Step  3: INSPECT acc_0025                    flagged=0/10  suspects=0  steps_left=27
+    Step  4: INSPECT acc_0026                    flagged=0/10  suspects=0  steps_left=26
+    Step  5: INSPECT acc_0038                    flagged=0/10  suspects=0  steps_left=25
+    Step  6: INSPECT acc_0029                    flagged=0/10  suspects=0  steps_left=24
+    Step  7: FLAG acc_0029                       flagged=1/10  suspects=9  steps_left=24
+    Step  8: INSPECT acc_0006                    flagged=1/10  suspects=9  steps_left=23
+    Step  9: FLAG acc_0006                       flagged=2/10  suspects=8  steps_left=23
+    Step 10: INSPECT acc_0033                    flagged=2/10  suspects=8  steps_left=22
+    Step 11: FLAG acc_0033                       flagged=3/10  suspects=7  steps_left=22
+    Step 12: INSPECT acc_0015                    flagged=3/10  suspects=7  steps_left=21
+    Step 13: FLAG acc_0015                       flagged=4/10  suspects=6  steps_left=21
+    Step 14: INSPECT acc_0022                    flagged=4/10  suspects=6  steps_left=20
+    Step 15: FLAG acc_0022                       flagged=5/10  suspects=5  steps_left=20
+    Step 16: INSPECT acc_0009                    flagged=5/10  suspects=5  steps_left=19
+    Step 17: FLAG acc_0009                       flagged=6/10  suspects=4  steps_left=19
+    Step 18: INSPECT acc_0004                    flagged=6/10  suspects=4  steps_left=18
+    Step 19: FLAG acc_0004                       flagged=7/10  suspects=3  steps_left=18
+    Step 20: INSPECT acc_0024                    flagged=7/10  suspects=3  steps_left=17
+    Step 21: FLAG acc_0024                       flagged=8/10  suspects=2  steps_left=17
+    Step 22: INSPECT acc_0049                    flagged=8/10  suspects=2  steps_left=16
+    Step 23: FLAG acc_0049                       flagged=9/10  suspects=1  steps_left=16
+    Step 24: INSPECT acc_0035                    flagged=9/10  suspects=1  steps_left=15
+    Step 25: FLAG acc_0035                       flagged=10/10  suspects=0  steps_left=15
+    Step 26: INSPECT acc_0044                    flagged=10/10  suspects=0  steps_left=14
+    Step 27: INSPECT acc_0016                    flagged=10/10  suspects=0  steps_left=13
+    Step 28: INSPECT acc_0043                    flagged=10/10  suspects=0  steps_left=12
+    Step 29: INSPECT acc_0003                    flagged=10/10  suspects=0  steps_left=11
+    Step 30: INSPECT acc_0028                    flagged=10/10  suspects=0  steps_left=10
+    Step 31: INSPECT acc_0027                    flagged=10/10  suspects=0  steps_left=9
+    Step 32: INSPECT acc_0023                    flagged=10/10  suspects=0  steps_left=8
+    Step 33: INSPECT acc_0041                    flagged=10/10  suspects=0  steps_left=7
+    Step 34: INSPECT acc_0045                    flagged=10/10  suspects=0  steps_left=6
+    Step 35: INSPECT acc_0039                    flagged=10/10  suspects=0  steps_left=5
+    Step 36: INSPECT acc_0048                    flagged=10/10  suspects=0  steps_left=4
+    Step 37: INSPECT acc_0046                    flagged=10/10  suspects=0  steps_left=3
+    Step 38: INSPECT acc_0032                    flagged=10/10  suspects=0  steps_left=2
+    Step 39: INSPECT acc_0037                    flagged=10/10  suspects=0  steps_left=1
+    Step 40: INSPECT acc_0014                    flagged=10/10  suspects=0  steps_left=0
+    → Episode ended: [WIN] TP=10 FP=0 FN=0 Recall=1.00 Precision=1.00 Episode reward=15.70
+    ★ GRADER SCORE: 0.9000
+
+  easy: scores=['0.900', '0.937', '0.900']  mean=0.9122  var=0.000299
+
+  --- LLM Agent: task=medium, seed=0, model=Bedrock/google.gemma-3-12b-it ---
+    Step  1: INSPECT acc_0008                    flagged=0/10  suspects=0  steps_left=49
+    Step  2: INSPECT acc_0074                    flagged=0/10  suspects=0  steps_left=48
+    Step  3: INSPECT acc_0179                    flagged=0/10  suspects=0  steps_left=47
+    Step  4: INSPECT acc_0096                    flagged=0/10  suspects=0  steps_left=46
+    Step  5: INSPECT acc_0177                    flagged=0/10  suspects=0  steps_left=45
+    Step  6: INSPECT acc_0122                    flagged=0/10  suspects=0  steps_left=44
+    Step  7: INSPECT acc_0189                    flagged=0/10  suspects=0  steps_left=43
+    Step  8: INSPECT acc_0174                    flagged=0/10  suspects=0  steps_left=42
+    Step  9: INSPECT acc_0144                    flagged=0/10  suspects=0  steps_left=78
+    Step 10: INSPECT acc_0289                    flagged=0/10  suspects=0  steps_left=77
+    Step 11: INSPECT acc_0826                    flagged=0/10  suspects=0  steps_left=76
+    Step 12: INSPECT acc_0927                    flagged=0/10  suspects=0  steps_left=75
+    Step 13: INSPECT acc_0441                    flagged=0/10  suspects=0  steps_left=74
+    Step 14: INSPECT acc_0871                    flagged=0/10  suspects=0  steps_left=73
+    Step 15: INSPECT acc_0880                    flagged=0/10  suspects=0  steps_left=72
+    Step 16: INSPECT acc_0652                    flagged=0/10  suspects=0  steps_left=71
+    Step 17: INSPECT acc_0939                    flagged=0/10  suspects=0  steps_left=70
+    Step 18: INSPECT acc_0070                    flagged=0/10  suspects=0  steps_left=69
+    Step 19: INSPECT acc_0915                    flagged=0/10  suspects=0  steps_left=68
+    Step 20: INSPECT acc_0443                    flagged=0/10  suspects=0  steps_left=67
+    Step 21: INSPECT acc_0970                    flagged=0/10  suspects=0  steps_left=66
+    Step 22: INSPECT acc_0028                    flagged=0/10  suspects=0  steps_left=65
+    Step 23: INSPECT acc_0792                    flagged=0/10  suspects=0  steps_left=64
+    Step 24: INSPECT acc_0579                    flagged=0/10  suspects=0  steps_left=63
+    Step 25: INSPECT acc_0037                    flagged=0/10  suspects=0  steps_left=62
+    Step 26: INSPECT acc_0295                    flagged=0/10  suspects=0  steps_left=61
+    Step 27: INSPECT acc_0438                    flagged=0/10  suspects=0  steps_left=60
+    Step 28: INSPECT acc_0439                    flagged=0/10  suspects=0  steps_left=59
+    Step 29: FLAG acc_0439                       flagged=1/10  suspects=5  steps_left=59
+    Step 30: INSPECT acc_0237                    flagged=1/10  suspects=5  steps_left=58
+    Step 31: FLAG acc_0237                       flagged=2/10  suspects=6  steps_left=58
+    Step 32: INSPECT acc_0621                    flagged=2/10  suspects=6  steps_left=57
+    Step 33: FLAG acc_0621                       flagged=3/10  suspects=6  steps_left=57
+    Step 34: INSPECT acc_0389                    flagged=3/10  suspects=6  steps_left=56
+    Step 35: INSPECT acc_0160                    flagged=3/10  suspects=6  steps_left=55
+    Step 36: FLAG acc_0160                       flagged=4/10  suspects=6  steps_left=55
+    Step 37: INSPECT acc_0549                    flagged=4/10  suspects=6  steps_left=54
+    Step 38: FLAG acc_0549                       flagged=5/10  suspects=5  steps_left=54
+    Step 39: FLAG acc_0389                       flagged=6/10  suspects=4  steps_left=54
+    Step 40: INSPECT acc_0658                    flagged=6/10  suspects=4  steps_left=53
+    Step 41: FLAG acc_0658                       flagged=7/10  suspects=3  steps_left=53
+    Step 42: INSPECT acc_0290                    flagged=7/10  suspects=3  steps_left=52
+    Step 43: FLAG acc_0290                       flagged=8/10  suspects=2  steps_left=52
+    Step 44: INSPECT acc_0124                    flagged=8/10  suspects=2  steps_left=51
+    Step 45: FLAG acc_0124                       flagged=9/10  suspects=1  steps_left=51
+    Step 46: INSPECT acc_0507                    flagged=9/10  suspects=1  steps_left=50
+    Step 47: FLAG acc_0507                       flagged=10/10  suspects=0  steps_left=50
+    Step 48: INSPECT acc_0086                    flagged=10/10  suspects=0  steps_left=49
+    Step 49: INSPECT acc_0497                    flagged=10/10  suspects=0  steps_left=48
+    Step 50: INSPECT acc_0610                    flagged=10/10  suspects=0  steps_left=47
+    Step 51: INSPECT acc_0573                    flagged=10/10  suspects=0  steps_left=46
+    Step 52: INSPECT acc_0479                    flagged=10/10  suspects=0  steps_left=45
+    Step 53: INSPECT acc_0287                    flagged=10/10  suspects=0  steps_left=44
+    Step 54: INSPECT acc_0960                    flagged=10/10  suspects=0  steps_left=43
+    Step 55: INSPECT acc_0455                    flagged=10/10  suspects=0  steps_left=42
+    Step 56: INSPECT acc_0248                    flagged=10/10  suspects=0  steps_left=41
+    Step 57: INSPECT acc_0964                    flagged=10/10  suspects=0  steps_left=40
+    Step 58: INSPECT acc_0480                    flagged=10/10  suspects=0  steps_left=39
+    Step 59: INSPECT acc_0154                    flagged=10/10  suspects=0  steps_left=38
+    Step 60: INSPECT acc_0368                    flagged=10/10  suspects=0  steps_left=37
+    Step 61: INSPECT acc_0426                    flagged=10/10  suspects=0  steps_left=36
+    Step 62: SUBMIT                              flagged=10/10  suspects=0  steps_left=36
+    → Episode ended: [WIN] TP=10 FP=0 FN=0 Recall=1.00 Precision=1.00 Episode reward=15.56
+    ★ GRADER SCORE: 0.9450
+
+  --- LLM Agent: task=medium, seed=1, model=Bedrock/google.gemma-3-12b-it ---
+    Step  1: INSPECT acc_0171                    flagged=0/10  suspects=0  steps_left=49
+    Step  2: INSPECT acc_0099                    flagged=0/10  suspects=0  steps_left=48
+    Step  3: INSPECT acc_0152                    flagged=0/10  suspects=0  steps_left=47
+    Step  4: INSPECT acc_0092                    flagged=0/10  suspects=0  steps_left=46
+    Step  5: INSPECT acc_0078                    flagged=0/10  suspects=0  steps_left=45
+    Step  6: INSPECT acc_0112                    flagged=0/10  suspects=0  steps_left=44
+    Step  7: INSPECT acc_0012                    flagged=0/10  suspects=0  steps_left=43
+    Step  8: FLAG acc_0012                       flagged=1/10  suspects=8  steps_left=43
+    Step  9: INSPECT acc_0033                    flagged=1/10  suspects=8  steps_left=42
+    Step 10: FLAG acc_0033                       flagged=2/10  suspects=8  steps_left=42
+    Step 11: INSPECT acc_0174                    flagged=2/10  suspects=8  steps_left=41
+    Step 12: FLAG acc_0174                       flagged=3/10  suspects=7  steps_left=41
+    Step 13: INSPECT acc_0187                    flagged=3/10  suspects=7  steps_left=40
+    Step 14: FLAG acc_0187                       flagged=4/10  suspects=6  steps_left=40
+    Step 15: INSPECT acc_0079                    flagged=4/10  suspects=6  steps_left=39
+    Step 16: FLAG acc_0079                       flagged=5/10  suspects=5  steps_left=39
+    Step 17: INSPECT acc_0032                    flagged=5/10  suspects=5  steps_left=38
+    Step 18: FLAG acc_0032                       flagged=6/10  suspects=4  steps_left=38
+    Step 19: INSPECT acc_0023                    flagged=6/10  suspects=4  steps_left=37
+    Step 20: FLAG acc_0023                       flagged=7/10  suspects=3  steps_left=37
+    Step 21: INSPECT acc_0146                    flagged=7/10  suspects=3  steps_left=36
+    Step 22: FLAG acc_0146                       flagged=8/10  suspects=2  steps_left=36
+    Step 23: INSPECT acc_0019                    flagged=8/10  suspects=2  steps_left=35
+    Step 24: FLAG acc_0019                       flagged=9/10  suspects=1  steps_left=35
+    Step 25: INSPECT acc_0131                    flagged=9/10  suspects=1  steps_left=34
+    Step 26: FLAG acc_0131                       flagged=10/10  suspects=0  steps_left=34
+    Step 27: INSPECT acc_0168                    flagged=10/10  suspects=0  steps_left=33
+    Step 28: INSPECT acc_0198                    flagged=10/10  suspects=0  steps_left=32
+    Step 29: INSPECT acc_0186                    flagged=10/10  suspects=0  steps_left=31
+    Step 30: INSPECT acc_0084                    flagged=10/10  suspects=0  steps_left=30
+    Step 31: INSPECT acc_0117                    flagged=10/10  suspects=0  steps_left=29
+    Step 32: INSPECT acc_0192                    flagged=10/10  suspects=0  steps_left=28
+    Step 33: INSPECT acc_0025                    flagged=10/10  suspects=0  steps_left=27
+    Step 34: INSPECT acc_0176                    flagged=10/10  suspects=0  steps_left=26
+    Step 35: INSPECT acc_0185                    flagged=10/10  suspects=0  steps_left=25
+    Step 36: INSPECT acc_0027                    flagged=10/10  suspects=0  steps_left=24
+    Step 37: INSPECT acc_0199                    flagged=10/10  suspects=0  steps_left=23
+    Step 38: INSPECT acc_0135                    flagged=10/10  suspects=0  steps_left=22
+    Step 39: INSPECT acc_0082                    flagged=10/10  suspects=0  steps_left=21
+    Step 40: INSPECT acc_0002                    flagged=10/10  suspects=0  steps_left=20
+    Step 41: INSPECT acc_0161                    flagged=10/10  suspects=0  steps_left=19
+    Step 42: INSPECT acc_0067                    flagged=10/10  suspects=0  steps_left=18
+    Step 43: INSPECT acc_0062                    flagged=10/10  suspects=0  steps_left=17
+    Step 44: INSPECT acc_0034                    flagged=10/10  suspects=0  steps_left=16
+    Step 45: INSPECT acc_0010                    flagged=10/10  suspects=0  steps_left=15
+    Step 46: INSPECT acc_0173                    flagged=10/10  suspects=0  steps_left=14
+    Step 47: INSPECT acc_0081                    flagged=10/10  suspects=0  steps_left=13
+    Step 48: INSPECT acc_0132                    flagged=10/10  suspects=0  steps_left=12
+    Step 49: INSPECT acc_0094                    flagged=10/10  suspects=0  steps_left=11
+    Step 50: INSPECT acc_0089                    flagged=10/10  suspects=0  steps_left=10
+    Step 51: INSPECT acc_0046                    flagged=10/10  suspects=0  steps_left=9
+    Step 52: INSPECT acc_0116                    flagged=10/10  suspects=0  steps_left=8
+    Step 53: INSPECT acc_0121                    flagged=10/10  suspects=0  steps_left=7
+    Step 54: INSPECT acc_0156                    flagged=10/10  suspects=0  steps_left=6
+    Step 55: INSPECT acc_0141                    flagged=10/10  suspects=0  steps_left=5
+    Step 56: INSPECT acc_0188                    flagged=10/10  suspects=0  steps_left=4
+    Step 57: INSPECT acc_0137                    flagged=10/10  suspects=0  steps_left=3
+    Step 58: INSPECT acc_0191                    flagged=10/10  suspects=0  steps_left=2
+    Step 59: INSPECT acc_0096                    flagged=10/10  suspects=0  steps_left=1
+    Step 60: INSPECT acc_0175                    flagged=10/10  suspects=0  steps_left=0
+    → Episode ended: [WIN] TP=10 FP=0 FN=0 Recall=1.00 Precision=1.00 Episode reward=15.50
+    ★ GRADER SCORE: 0.9000
+
+  --- LLM Agent: task=medium, seed=2, model=Bedrock/google.gemma-3-12b-it ---
+    Step  1: INSPECT acc_0189                    flagged=0/10  suspects=0  steps_left=49
+    Step  2: INSPECT acc_0107                    flagged=0/10  suspects=0  steps_left=48
+    Step  3: INSPECT acc_0175                    flagged=0/10  suspects=0  steps_left=47
+    Step  4: INSPECT acc_0030                    flagged=0/10  suspects=0  steps_left=46
+    Step  5: INSPECT acc_0041                    flagged=0/10  suspects=0  steps_left=45
+    Step  6: INSPECT acc_0054                    flagged=0/10  suspects=0  steps_left=44
+    Step  7: INSPECT acc_0199                    flagged=0/10  suspects=0  steps_left=43
+    Step  8: INSPECT acc_0181                    flagged=0/10  suspects=0  steps_left=42
+    Step  9: INSPECT acc_0166                    flagged=0/10  suspects=0  steps_left=41
+    Step 10: INSPECT acc_0098                    flagged=0/10  suspects=0  steps_left=40
+    Step 11: INSPECT acc_0121                    flagged=0/10  suspects=0  steps_left=39
+    Step 12: INSPECT acc_0053                    flagged=0/10  suspects=0  steps_left=38
+    Step 13: INSPECT acc_0000                    flagged=0/10  suspects=0  steps_left=37
+    Step 14: INSPECT acc_0103                    flagged=0/10  suspects=0  steps_left=36
+    Step 15: INSPECT acc_0168                    flagged=0/10  suspects=0  steps_left=35
+    Step 16: INSPECT acc_0040                    flagged=0/10  suspects=0  steps_left=34
+    Step 17: INSPECT acc_0149                    flagged=0/10  suspects=0  steps_left=33
+    Step 18: INSPECT acc_0064                    flagged=0/10  suspects=0  steps_left=32
+    Step 19: INSPECT acc_0016                    flagged=0/10  suspects=0  steps_left=31
+    Step 20: INSPECT acc_0105                    flagged=0/10  suspects=0  steps_left=30
+    Step 21: INSPECT acc_0035                    flagged=0/10  suspects=0  steps_left=29
+    Step 22: FLAG acc_0035                       flagged=1/10  suspects=9  steps_left=29
+    Step 23: INSPECT acc_0020                    flagged=1/10  suspects=9  steps_left=28
+    Step 24: FLAG acc_0020                       flagged=2/10  suspects=8  steps_left=28
+    Step 25: INSPECT acc_0036                    flagged=2/10  suspects=8  steps_left=27
+    Step 26: FLAG acc_0036                       flagged=3/10  suspects=7  steps_left=27
+    Step 27: INSPECT acc_0050                    flagged=3/10  suspects=7  steps_left=26
+    Step 28: FLAG acc_0050                       flagged=4/10  suspects=6  steps_left=26
+    Step 29: INSPECT acc_0051                    flagged=4/10  suspects=6  steps_left=25
+    Step 30: FLAG acc_0051                       flagged=5/10  suspects=5  steps_left=25
+    Step 31: INSPECT acc_0085                    flagged=5/10  suspects=5  steps_left=24
+    Step 32: FLAG acc_0085                       flagged=6/10  suspects=4  steps_left=24
+    Step 33: INSPECT acc_0177                    flagged=6/10  suspects=4  steps_left=23
+    Step 34: FLAG acc_0177                       flagged=7/10  suspects=3  steps_left=23
+    Step 35: INSPECT acc_0170                    flagged=7/10  suspects=3  steps_left=22
+    Step 36: FLAG acc_0170                       flagged=8/10  suspects=2  steps_left=22
+    Step 37: INSPECT acc_0055                    flagged=8/10  suspects=2  steps_left=21
+    Step 38: FLAG acc_0055                       flagged=9/10  suspects=1  steps_left=21
+    Step 39: INSPECT acc_0094                    flagged=9/10  suspects=1  steps_left=20
+    Step 40: FLAG acc_0094                       flagged=10/10  suspects=0  steps_left=20
+    Step 41: INSPECT acc_0185                    flagged=10/10  suspects=0  steps_left=19
+    Step 42: INSPECT acc_0013                    flagged=10/10  suspects=0  steps_left=18
+    Step 43: INSPECT acc_0192                    flagged=10/10  suspects=0  steps_left=17
+    Step 44: INSPECT acc_0099                    flagged=10/10  suspects=0  steps_left=16
+    Step 45: INSPECT acc_0075                    flagged=10/10  suspects=0  steps_left=15
+    Step 46: INSPECT acc_0058                    flagged=10/10  suspects=0  steps_left=14
+    Step 47: INSPECT acc_0072                    flagged=10/10  suspects=0  steps_left=13
+    Step 48: INSPECT acc_0070                    flagged=10/10  suspects=0  steps_left=12
+    Step 49: INSPECT acc_0071                    flagged=10/10  suspects=0  steps_left=11
+    Step 50: INSPECT acc_0091                    flagged=10/10  suspects=0  steps_left=10
+    Step 51: INSPECT acc_0169                    flagged=10/10  suspects=0  steps_left=9
+    Step 52: INSPECT acc_0033                    flagged=10/10  suspects=0  steps_left=8
+    Step 53: INSPECT acc_0151                    flagged=10/10  suspects=0  steps_left=7
+    Step 54: INSPECT acc_0063                    flagged=10/10  suspects=0  steps_left=6
+    Step 55: INSPECT acc_0157                    flagged=10/10  suspects=0  steps_left=5
+    Step 56: INSPECT acc_0001                    flagged=10/10  suspects=0  steps_left=4
+    Step 57: INSPECT acc_0019                    flagged=10/10  suspects=0  steps_left=3
+    Step 58: SUBMIT                              flagged=10/10  suspects=0  steps_left=3
+    → Episode ended: [WIN] TP=10 FP=0 FN=0 Recall=1.00 Precision=1.00 Episode reward=17.53
+    ★ GRADER SCORE: 0.9060
+
+  medium: scores=['0.945', '0.900', '0.906']  mean=0.9170  var=0.000398
+
+  --- LLM Agent: task=hard, seed=0, model=Bedrock/google.gemma-3-12b-it ---
+    Step  1: INSPECT acc_0704                    flagged=0/10  suspects=0  steps_left=79
+    Step  2: INSPECT acc_0289                    flagged=0/10  suspects=0  steps_left=78
+    Step  3: INSPECT acc_0826                    flagged=0/10  suspects=0  steps_left=77
+    Step  4: INSPECT acc_0927                    flagged=0/10  suspects=0  steps_left=76
+    Step  5: INSPECT acc_0441                    flagged=0/10  suspects=0  steps_left=75
+    Step  6: INSPECT acc_0871                    flagged=0/10  suspects=0  steps_left=74
+    Step  7: INSPECT acc_0880                    flagged=0/10  suspects=0  steps_left=73
+    Step  8: INSPECT acc_0652                    flagged=0/10  suspects=0  steps_left=72
+    Step  9: INSPECT acc_0939                    flagged=0/10  suspects=0  steps_left=71
+    Step 10: INSPECT acc_0070                    flagged=0/10  suspects=0  steps_left=70
+    Step 11: INSPECT acc_0915                    flagged=0/10  suspects=0  steps_left=69
+    Step 12: INSPECT acc_0443                    flagged=0/10  suspects=0  steps_left=68
+    Step 13: INSPECT acc_0970                    flagged=0/10  suspects=0  steps_left=67
+    Step 14: INSPECT acc_0028                    flagged=0/10  suspects=0  steps_left=66
+    Step 15: INSPECT acc_0792                    flagged=0/10  suspects=0  steps_left=65
+    Step 16: INSPECT acc_0579                    flagged=0/10  suspects=0  steps_left=64
+    Step 17: INSPECT acc_0037                    flagged=0/10  suspects=0  steps_left=63
+    Step 18: INSPECT acc_0295                    flagged=0/10  suspects=0  steps_left=62
+    Step 19: INSPECT acc_0438                    flagged=0/10  suspects=0  steps_left=61
+    Step 20: INSPECT acc_0439                    flagged=0/10  suspects=0  steps_left=60
+    Step 21: FLAG acc_0439                       flagged=1/10  suspects=5  steps_left=60
+    Step 22: INSPECT acc_0237                    flagged=1/10  suspects=5  steps_left=59
+    Step 23: FLAG acc_0237                       flagged=2/10  suspects=6  steps_left=59
+    Step 24: INSPECT acc_0621                    flagged=2/10  suspects=6  steps_left=58
+    Step 25: FLAG acc_0621                       flagged=3/10  suspects=6  steps_left=58
+    Step 26: INSPECT acc_0389                    flagged=3/10  suspects=6  steps_left=57
+    Step 27: INSPECT acc_0160                    flagged=3/10  suspects=6  steps_left=56
+    Step 28: FLAG acc_0160                       flagged=4/10  suspects=6  steps_left=56
+    Step 29: INSPECT acc_0549                    flagged=4/10  suspects=6  steps_left=55
+    Step 30: FLAG acc_0549                       flagged=5/10  suspects=5  steps_left=55
+    Step 31: FLAG acc_0389                       flagged=6/10  suspects=4  steps_left=55
+    Step 32: INSPECT acc_0658                    flagged=6/10  suspects=4  steps_left=54
+    Step 33: FLAG acc_0658                       flagged=7/10  suspects=3  steps_left=54
+    Step 34: INSPECT acc_0290                    flagged=7/10  suspects=3  steps_left=53
+    Step 35: FLAG acc_0290                       flagged=8/10  suspects=2  steps_left=53
+    Step 36: INSPECT acc_0124                    flagged=8/10  suspects=2  steps_left=52
+    Step 37: FLAG acc_0124                       flagged=9/10  suspects=1  steps_left=52
+    Step 38: INSPECT acc_0507                    flagged=9/10  suspects=1  steps_left=51
+    Step 39: FLAG acc_0507                       flagged=10/10  suspects=0  steps_left=51
+    Step 40: INSPECT acc_0086                    flagged=10/10  suspects=0  steps_left=50
+    Step 41: INSPECT acc_0497                    flagged=10/10  suspects=0  steps_left=49
+    Step 42: INSPECT acc_0610                    flagged=10/10  suspects=0  steps_left=48
+    Step 43: INSPECT acc_0573                    flagged=10/10  suspects=0  steps_left=47
+    Step 44: INSPECT acc_0479                    flagged=10/10  suspects=0  steps_left=46
+    Step 45: INSPECT acc_0287                    flagged=10/10  suspects=0  steps_left=45
+    Step 46: INSPECT acc_0960                    flagged=10/10  suspects=0  steps_left=44
+    Step 47: INSPECT acc_0455                    flagged=10/10  suspects=0  steps_left=43
+    Step 48: INSPECT acc_0248                    flagged=10/10  suspects=0  steps_left=42
+    Step 49: INSPECT acc_0964                    flagged=10/10  suspects=0  steps_left=41
+    Step 50: INSPECT acc_0480                    flagged=10/10  suspects=0  steps_left=40
+    Step 51: INSPECT acc_0154                    flagged=10/10  suspects=0  steps_left=39
+    Step 52: INSPECT acc_0368                    flagged=10/10  suspects=0  steps_left=38
+    Step 53: INSPECT acc_0426                    flagged=10/10  suspects=0  steps_left=37
+    Step 54: INSPECT acc_0810                    flagged=10/10  suspects=0  steps_left=36
+    Step 55: INSPECT acc_0040                    flagged=10/10  suspects=0  steps_left=35
+    Step 56: INSPECT acc_0538                    flagged=10/10  suspects=0  steps_left=34
+    Step 57: INSPECT acc_0940                    flagged=10/10  suspects=0  steps_left=33
+    Step 58: INSPECT acc_0668                    flagged=10/10  suspects=0  steps_left=32
+    Step 59: INSPECT acc_0721                    flagged=10/10  suspects=0  steps_left=31
+    Step 60: INSPECT acc_0787                    flagged=10/10  suspects=0  steps_left=30
+    Step 61: INSPECT acc_0639                    flagged=10/10  suspects=0  steps_left=29
+    Step 62: INSPECT acc_0700                    flagged=10/10  suspects=0  steps_left=28
+    Step 63: INSPECT acc_0353                    flagged=10/10  suspects=0  steps_left=27
+    Step 64: INSPECT acc_0620                    flagged=10/10  suspects=0  steps_left=26
+    Step 65: INSPECT acc_0499                    flagged=10/10  suspects=0  steps_left=25
+    Step 66: INSPECT acc_0207                    flagged=10/10  suspects=0  steps_left=24
+    Step 67: INSPECT acc_0011                    flagged=10/10  suspects=0  steps_left=23
+    Step 68: INSPECT acc_0524                    flagged=10/10  suspects=0  steps_left=22
+    Step 69: INSPECT acc_0553                    flagged=10/10  suspects=0  steps_left=21
+    Step 70: INSPECT acc_0948                    flagged=10/10  suspects=0  steps_left=20
+    Step 71: INSPECT acc_0333                    flagged=10/10  suspects=0  steps_left=19
+    Step 72: INSPECT acc_0574                    flagged=10/10  suspects=0  steps_left=18
+    Step 73: INSPECT acc_0258                    flagged=10/10  suspects=0  steps_left=17
+    Step 74: INSPECT acc_0742                    flagged=10/10  suspects=0  steps_left=16
+    Step 75: INSPECT acc_0354                    flagged=10/10  suspects=0  steps_left=15
+    Step 76: INSPECT acc_0022                    flagged=10/10  suspects=0  steps_left=14
+    Step 77: INSPECT acc_0232                    flagged=10/10  suspects=0  steps_left=13
+    Step 78: INSPECT acc_0123                    flagged=10/10  suspects=0  steps_left=12
+    Step 79: INSPECT acc_0844                    flagged=10/10  suspects=0  steps_left=11
+    Step 80: INSPECT acc_0757                    flagged=10/10  suspects=0  steps_left=10
+    Step 81: INSPECT acc_0653                    flagged=10/10  suspects=0  steps_left=9
+    Step 82: INSPECT acc_0119                    flagged=10/10  suspects=0  steps_left=8
+    Step 83: INSPECT acc_0514                    flagged=10/10  suspects=0  steps_left=7
+    Step 84: INSPECT acc_0687                    flagged=10/10  suspects=0  steps_left=6
+    Step 85: SUBMIT                              flagged=10/10  suspects=0  steps_left=6
+    → Episode ended: [WIN] TP=10 FP=0 FN=0 Recall=1.00 Precision=1.00 Episode reward=13.26
+    ★ GRADER SCORE: 0.9075
+
+  --- LLM Agent: task=hard, seed=1, model=Bedrock/google.gemma-3-12b-it ---
+    Step  1: INSPECT acc_0014                    flagged=0/10  suspects=0  steps_left=79
+    Step  2: INSPECT acc_0835                    flagged=0/10  suspects=0  steps_left=78
+    Step  3: INSPECT acc_0855                    flagged=0/10  suspects=0  steps_left=77
+    Step  4: INSPECT acc_0930                    flagged=0/10  suspects=0  steps_left=76
+    Step  5: INSPECT acc_0336                    flagged=0/10  suspects=0  steps_left=75
+    Step  6: INSPECT acc_0929                    flagged=0/10  suspects=0  steps_left=74
+    Step  7: INSPECT acc_0076                    flagged=0/10  suspects=0  steps_left=73
+    Step  8: INSPECT acc_0543                    flagged=0/10  suspects=0  steps_left=72
+    Step  9: INSPECT acc_0590                    flagged=0/10  suspects=0  steps_left=71
+    Step 10: INSPECT acc_0401                    flagged=0/10  suspects=0  steps_left=70
+    Step 11: INSPECT acc_0322                    flagged=0/10  suspects=0  steps_left=69
+    Step 12: INSPECT acc_0154                    flagged=0/10  suspects=0  steps_left=68
+    Step 13: INSPECT acc_0374                    flagged=0/10  suspects=0  steps_left=66
+    Step 14: INSPECT acc_0549                    flagged=0/10  suspects=0  steps_left=65
+    Step 15: INSPECT acc_0903                    flagged=0/10  suspects=0  steps_left=64
+    Step 16: INSPECT acc_0976                    flagged=0/10  suspects=0  steps_left=63
+    Step 17: INSPECT acc_0620                    flagged=0/10  suspects=0  steps_left=62
+    Step 18: INSPECT acc_0017                    flagged=0/10  suspects=0  steps_left=61
+    Step 19: INSPECT acc_0222                    flagged=0/10  suspects=0  steps_left=60
+    Step 20: INSPECT acc_0536                    flagged=0/10  suspects=0  steps_left=59
+    Step 21: INSPECT acc_0112                    flagged=0/10  suspects=0  steps_left=58
+    Step 22: INSPECT acc_0577                    flagged=0/10  suspects=0  steps_left=56
+    Step 23: INSPECT acc_0517                    flagged=0/10  suspects=0  steps_left=55
+    Step 24: INSPECT acc_0113                    flagged=0/10  suspects=0  steps_left=54
+    Step 25: INSPECT acc_0167                    flagged=0/10  suspects=0  steps_left=53
+    Step 26: INSPECT acc_0697                    flagged=0/10  suspects=0  steps_left=52
+    Step 27: INSPECT acc_0271                    flagged=0/10  suspects=0  steps_left=51
+    Step 28: INSPECT acc_0681                    flagged=0/10  suspects=0  steps_left=50
+    Step 29: INSPECT acc_0530                    flagged=0/10  suspects=0  steps_left=49
+    Step 30: INSPECT acc_0353                    flagged=0/10  suspects=0  steps_left=48
+    Step 31: INSPECT acc_0652                    flagged=0/10  suspects=0  steps_left=47
+    Step 32: INSPECT acc_0777                    flagged=0/10  suspects=0  steps_left=46
+    Step 33: INSPECT acc_0265                    flagged=0/10  suspects=0  steps_left=45
+    Step 34: INSPECT acc_0788                    flagged=0/10  suspects=0  steps_left=44
+    Step 35: INSPECT acc_0033                    flagged=0/10  suspects=0  steps_left=43
+    Step 36: INSPECT acc_0187                    flagged=0/10  suspects=0  steps_left=42
+    Step 37: INSPECT acc_0445                    flagged=0/10  suspects=0  steps_left=41
+    Step 38: INSPECT acc_0846                    flagged=0/10  suspects=0  steps_left=40
+    Step 39: INSPECT acc_0659                    flagged=0/10  suspects=0  steps_left=39
+    Step 40: INSPECT acc_0768                    flagged=0/10  suspects=0  steps_left=38
+    Step 41: INSPECT acc_0677                    flagged=0/10  suspects=0  steps_left=37
+    Step 42: INSPECT acc_0539                    flagged=0/10  suspects=0  steps_left=36
+    Step 43: INSPECT acc_0742                    flagged=0/10  suspects=0  steps_left=35
+    Step 44: INSPECT acc_0503                    flagged=0/10  suspects=0  steps_left=34
+    Step 45: INSPECT acc_0876                    flagged=0/10  suspects=0  steps_left=33
+    Step 46: INSPECT acc_0639                    flagged=0/10  suspects=0  steps_left=32
+    Step 47: INSPECT acc_0494                    flagged=0/10  suspects=0  steps_left=31
+    Step 48: INSPECT acc_0898                    flagged=0/10  suspects=0  steps_left=30
+    Step 49: INSPECT acc_0553                    flagged=0/10  suspects=0  steps_left=29
+    Step 50: INSPECT acc_0588                    flagged=0/10  suspects=0  steps_left=28
+    Step 51: INSPECT acc_0194                    flagged=0/10  suspects=0  steps_left=27
+    Step 52: INSPECT acc_0810                    flagged=0/10  suspects=0  steps_left=26
+    Step 53: INSPECT acc_0355                    flagged=0/10  suspects=0  steps_left=25
+    Step 54: INSPECT acc_0363                    flagged=0/10  suspects=0  steps_left=24
+    Step 55: INSPECT acc_0221                    flagged=0/10  suspects=0  steps_left=23
+    Step 56: INSPECT acc_0580                    flagged=0/10  suspects=0  steps_left=22
+    Step 57: INSPECT acc_0534                    flagged=0/10  suspects=0  steps_left=21
+    Step 58: INSPECT acc_0778                    flagged=0/10  suspects=0  steps_left=20
+    Step 59: INSPECT acc_0998                    flagged=0/10  suspects=0  steps_left=19
+    Step 60: INSPECT acc_0233                    flagged=0/10  suspects=0  steps_left=18
+    Step 61: INSPECT acc_0052                    flagged=0/10  suspects=0  steps_left=17
+    Step 62: INSPECT acc_0813                    flagged=0/10  suspects=0  steps_left=16
+    Step 63: INSPECT acc_0035                    flagged=0/10  suspects=0  steps_left=15
+    Step 64: INSPECT acc_0667                    flagged=0/10  suspects=0  steps_left=14
+    Step 65: INSPECT acc_0019                    flagged=0/10  suspects=0  steps_left=13
+    Step 66: INSPECT acc_0959                    flagged=0/10  suspects=0  steps_left=12
+    Step 67: INSPECT acc_0212                    flagged=0/10  suspects=0  steps_left=11
+    Step 68: INSPECT acc_0776                    flagged=0/10  suspects=0  steps_left=10
+    Step 69: INSPECT acc_0049                    flagged=0/10  suspects=0  steps_left=9
+    Step 70: INSPECT acc_0434                    flagged=0/10  suspects=0  steps_left=8
+    Step 71: INSPECT acc_0827                    flagged=0/10  suspects=0  steps_left=7
+    Step 72: INSPECT acc_0583                    flagged=0/10  suspects=0  steps_left=6
+    Step 73: INSPECT acc_0065                    flagged=0/10  suspects=0  steps_left=5
+    Step 74: INSPECT acc_0107                    flagged=0/10  suspects=0  steps_left=4
+    Step 75: INSPECT acc_0761                    flagged=0/10  suspects=0  steps_left=3
+    Step 76: INSPECT acc_0995                    flagged=0/10  suspects=0  steps_left=2
+    Step 77: INSPECT acc_0157                    flagged=0/10  suspects=0  steps_left=1
+    Step 78: INSPECT acc_0936                    flagged=0/10  suspects=0  steps_left=0
+    → Episode ended: [LOSS] TP=0 FP=0 FN=10 Recall=0.00 Precision=0.00 Episode reward=-9.80
+    ★ GRADER SCORE: 0.0000
+
+  --- LLM Agent: task=hard, seed=2, model=Bedrock/google.gemma-3-12b-it ---
+    Step  1: INSPECT acc_0813                    flagged=0/10  suspects=0  steps_left=79
+    Step  2: INSPECT acc_0430                    flagged=0/10  suspects=0  steps_left=78
+    Step  3: INSPECT acc_0817                    flagged=0/10  suspects=0  steps_left=77
+    Step  4: INSPECT acc_0175                    flagged=0/10  suspects=0  steps_left=76
+    Step  5: INSPECT acc_0523                    flagged=0/10  suspects=0  steps_left=75
+    Step  6: INSPECT acc_0113                    flagged=0/10  suspects=0  steps_left=74
+    Step  7: INSPECT acc_0797                    flagged=0/10  suspects=0  steps_left=73
+    Step  8: INSPECT acc_0478                    flagged=0/10  suspects=0  steps_left=72
+    Step  9: INSPECT acc_0861                    flagged=0/10  suspects=0  steps_left=71
+    Step 10: INSPECT acc_0836                    flagged=0/10  suspects=0  steps_left=70
+    Step 11: INSPECT acc_0926                    flagged=0/10  suspects=0  steps_left=69
+    Step 12: INSPECT acc_0664                    flagged=0/10  suspects=0  steps_left=68
+    Step 13: INSPECT acc_0255                    flagged=0/10  suspects=0  steps_left=67
+    Step 14: INSPECT acc_0938                    flagged=0/10  suspects=0  steps_left=66
+    Step 15: INSPECT acc_0672                    flagged=0/10  suspects=0  steps_left=65
+    Step 16: FLAG acc_0672                       flagged=1/10  suspects=6  steps_left=65
+    Step 17: INSPECT acc_0659                    flagged=1/10  suspects=6  steps_left=64
+    Step 18: FLAG acc_0659                       flagged=2/10  suspects=5  steps_left=64
+    Step 19: INSPECT acc_0290                    flagged=2/10  suspects=5  steps_left=63
+    Step 20: FLAG acc_0290                       flagged=3/10  suspects=5  steps_left=63
+    Step 21: INSPECT acc_0339                    flagged=3/10  suspects=5  steps_left=62
+    Step 22: FLAG acc_0339                       flagged=4/10  suspects=6  steps_left=62
+    Step 23: INSPECT acc_0544                    flagged=4/10  suspects=6  steps_left=61
+    Step 24: FLAG acc_0544                       flagged=5/10  suspects=5  steps_left=61
+    Step 25: INSPECT acc_0696                    flagged=5/10  suspects=5  steps_left=60
+    Step 26: FLAG acc_0696                       flagged=6/10  suspects=4  steps_left=60
+    Step 27: INSPECT acc_0541                    flagged=6/10  suspects=4  steps_left=59
+    Step 28: FLAG acc_0541                       flagged=7/10  suspects=3  steps_left=59
+    Step 29: INSPECT acc_0793                    flagged=7/10  suspects=3  steps_left=58
+    Step 30: FLAG acc_0793                       flagged=8/10  suspects=2  steps_left=58
+    Step 31: INSPECT acc_0214                    flagged=8/10  suspects=2  steps_left=57
+    Step 32: FLAG acc_0214                       flagged=9/10  suspects=1  steps_left=57
+    Step 33: INSPECT acc_0112                    flagged=9/10  suspects=1  steps_left=56
+    Step 34: FLAG acc_0112                       flagged=10/10  suspects=0  steps_left=56
+    Step 35: INSPECT acc_0348                    flagged=10/10  suspects=0  steps_left=55
+    Step 36: INSPECT acc_0721                    flagged=10/10  suspects=0  steps_left=54
+    Step 37: INSPECT acc_0321                    flagged=10/10  suspects=0  steps_left=53
+    Step 38: INSPECT acc_0349                    flagged=10/10  suspects=0  steps_left=52
+    Step 39: INSPECT acc_0635                    flagged=10/10  suspects=0  steps_left=51
+    Step 40: INSPECT acc_0773                    flagged=10/10  suspects=0  steps_left=50
+    Step 41: INSPECT acc_0269                    flagged=10/10  suspects=0  steps_left=49
+    Step 42: INSPECT acc_0644                    flagged=10/10  suspects=0  steps_left=48
+    Step 43: INSPECT acc_0260                    flagged=10/10  suspects=0  steps_left=47
+    Step 44: INSPECT acc_0574                    flagged=10/10  suspects=0  steps_left=46
+    Step 45: INSPECT acc_0684                    flagged=10/10  suspects=0  steps_left=45
+    Step 46: INSPECT acc_0645                    flagged=10/10  suspects=0  steps_left=44
+    Step 47: INSPECT acc_0357                    flagged=10/10  suspects=0  steps_left=43
+    Step 48: INSPECT acc_0186                    flagged=10/10  suspects=0  steps_left=42
+    Step 49: INSPECT acc_0701                    flagged=10/10  suspects=0  steps_left=41
+    Step 50: INSPECT acc_0347                    flagged=10/10  suspects=0  steps_left=40
+    Step 51: INSPECT acc_0854                    flagged=10/10  suspects=0  steps_left=39
+    Step 52: INSPECT acc_0450                    flagged=10/10  suspects=0  steps_left=38
+    Step 53: INSPECT acc_0718                    flagged=10/10  suspects=0  steps_left=37
+    Step 54: INSPECT acc_0887                    flagged=10/10  suspects=0  steps_left=36
+    Step 55: INSPECT acc_0295                    flagged=10/10  suspects=0  steps_left=35
+    Step 56: INSPECT acc_0484                    flagged=10/10  suspects=0  steps_left=34
+    Step 57: INSPECT acc_0838                    flagged=10/10  suspects=0  steps_left=33
+    Step 58: INSPECT acc_0502                    flagged=10/10  suspects=0  steps_left=32
+    Step 59: INSPECT acc_0618                    flagged=10/10  suspects=0  steps_left=31
+    Step 60: INSPECT acc_0847                    flagged=10/10  suspects=0  steps_left=30
+    Step 61: INSPECT acc_0118                    flagged=10/10  suspects=0  steps_left=29
+    Step 62: INSPECT acc_0056                    flagged=10/10  suspects=0  steps_left=28
+    Step 63: INSPECT acc_0800                    flagged=10/10  suspects=0  steps_left=27
+    Step 64: INSPECT acc_0850                    flagged=10/10  suspects=0  steps_left=26
+    Step 65: INSPECT acc_0607                    flagged=10/10  suspects=0  steps_left=25
+    Step 66: INSPECT acc_0330                    flagged=10/10  suspects=0  steps_left=24
+    Step 67: INSPECT acc_0985                    flagged=10/10  suspects=0  steps_left=23
+    Step 68: INSPECT acc_0593                    flagged=10/10  suspects=0  steps_left=22
+    Step 69: INSPECT acc_0799                    flagged=10/10  suspects=0  steps_left=21
+    Step 70: INSPECT acc_0686                    flagged=10/10  suspects=0  steps_left=20
+    Step 71: INSPECT acc_0385                    flagged=10/10  suspects=0  steps_left=19
+    Step 72: INSPECT acc_0894                    flagged=10/10  suspects=0  steps_left=18
+    Step 73: INSPECT acc_0599                    flagged=10/10  suspects=0  steps_left=17
+    Step 74: INSPECT acc_0039                    flagged=10/10  suspects=0  steps_left=16
+    Step 75: INSPECT acc_0207                    flagged=10/10  suspects=0  steps_left=15
+    Step 76: INSPECT acc_0981                    flagged=10/10  suspects=0  steps_left=14
+    Step 77: INSPECT acc_0030                    flagged=10/10  suspects=0  steps_left=13
+    Step 78: INSPECT acc_0815                    flagged=10/10  suspects=0  steps_left=12
+    Step 79: INSPECT acc_0777                    flagged=10/10  suspects=0  steps_left=11
+    Step 80: INSPECT acc_0978                    flagged=10/10  suspects=0  steps_left=10
+    Step 81: INSPECT acc_0520                    flagged=10/10  suspects=0  steps_left=9
+    Step 82: INSPECT acc_0900                    flagged=10/10  suspects=0  steps_left=8
+    Step 83: INSPECT acc_0416                    flagged=10/10  suspects=0  steps_left=7
+    Step 84: INSPECT acc_0514                    flagged=10/10  suspects=0  steps_left=6
+    Step 85: INSPECT acc_0722                    flagged=10/10  suspects=0  steps_left=5
+    Step 86: INSPECT acc_0134                    flagged=10/10  suspects=0  steps_left=4
+    Step 87: INSPECT acc_0919                    flagged=10/10  suspects=0  steps_left=3
+    Step 88: INSPECT acc_0204                    flagged=10/10  suspects=0  steps_left=2
+    Step 89: INSPECT acc_0967                    flagged=10/10  suspects=0  steps_left=1
+    Step 90: INSPECT acc_0649                    flagged=10/10  suspects=0  steps_left=0
+    → Episode ended: [WIN] TP=10 FP=0 FN=0 Recall=1.00 Precision=1.00 Episode reward=11.20
+    ★ GRADER SCORE: 0.9000
+
+  hard: scores=['0.907', '0.000', '0.900']  mean=0.6025  var=0.181512
+
+============================================================
+EVALUATION COMPLETE
+============================================================
+ubuntu@ip-172-31-33-59:~/meta/meta-hack-26$
