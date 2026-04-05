@@ -1,0 +1,410 @@
+ubuntu@ip-172-31-33-59:~/meta/meta-hack-26$ python3 mistral_test_judge_eval.py --url https://pandago-graphstrike.hf.space --bedrock
+GraphStrike Judge Evaluation Simulator
+Target:  https://pandago-graphstrike.hf.space
+Backend: bedrock
+Model:   Bedrock/mistral.ministral-3-8b-instruct
+Token:   set
+
+============================================================
+PHASE 0: Endpoint Verification
+============================================================
+  ✓ GET /health
+  ✓ GET /tasks
+  ✓ GET /metadata
+  ✓ GET /schema
+  ✓ GET /web
+  ✓ POST /reset
+  ✓ GET /state
+  ✓ POST /step
+  ✓ POST /step
+  ✓ GET /grader
+  ✓ POST /mcp
+  ✓ POST /baseline
+
+============================================================
+PHASE 1: Baseline Stability (3 runs)
+============================================================
+  Run 1: easy=0.9100  medium=0.9060  hard=0.9038
+  Run 2: easy=0.9100  medium=0.9060  hard=0.9038
+  Run 3: easy=0.9100  medium=0.9060  hard=0.9038
+  ✓ All 3 runs identical — baseline is deterministic
+
+============================================================
+PHASE 2: LLM Agent Evaluation (model=Bedrock/mistral.ministral-3-8b-instruct)
+============================================================
+
+  --- LLM Agent: task=easy, seed=0, model=Bedrock/mistral.ministral-3-8b-instruct ---
+    Step  1: INSPECT acc_0043                    flagged=0/10  suspects=0  steps_left=29
+    Step  2: FLAG acc_0043                       flagged=1/10  suspects=8  steps_left=29
+    Step  3: INSPECT acc_0036                    flagged=1/10  suspects=8  steps_left=28
+    Step  4: FLAG acc_0036                       flagged=2/10  suspects=8  steps_left=28
+    Step  5: INSPECT acc_0001                    flagged=2/10  suspects=8  steps_left=27
+    Step  6: FLAG acc_0001                       flagged=3/10  suspects=7  steps_left=27
+    Step  7: INSPECT acc_0014                    flagged=3/10  suspects=7  steps_left=26
+    Step  8: INSPECT acc_0012                    flagged=3/10  suspects=7  steps_left=25
+    Step  9: INSPECT acc_0000                    flagged=3/10  suspects=7  steps_left=24
+    Step 10: FLAG acc_0014                       flagged=4/10  suspects=6  steps_left=24
+    Step 11: FLAG acc_0000                       flagged=5/10  suspects=5  steps_left=24
+    Step 12: INSPECT acc_0027                    flagged=5/10  suspects=5  steps_left=23
+    Step 13: FLAG acc_0012                       flagged=6/10  suspects=4  steps_left=23
+    Step 14: FLAG acc_0027                       flagged=7/10  suspects=3  steps_left=23
+    Step 15: INSPECT acc_0047                    flagged=7/10  suspects=3  steps_left=22
+    Step 16: FLAG acc_0047                       flagged=8/10  suspects=2  steps_left=22
+    Step 17: INSPECT acc_0007                    flagged=8/10  suspects=2  steps_left=21
+    Step 18: FLAG acc_0007                       flagged=9/10  suspects=1  steps_left=21
+    Step 19: INSPECT acc_0028                    flagged=9/10  suspects=1  steps_left=20
+    Step 20: FLAG acc_0028                       flagged=10/10  suspects=0  steps_left=20
+    Step 21: SUBMIT                              flagged=10/10  suspects=0  steps_left=20
+    → Episode ended: [WIN] TP=10 FP=0 FN=0 Recall=1.00 Precision=1.00 Episode reward=18.90
+    ★ GRADER SCORE: 0.9667
+
+  --- LLM Agent: task=medium, seed=0, model=Bedrock/mistral.ministral-3-8b-instruct ---
+    Step  1: INSPECT acc_0008                    flagged=0/10  suspects=0  steps_left=49
+    Step  2: INSPECT acc_0074                    flagged=0/10  suspects=0  steps_left=48
+    Step  3: INSPECT acc_0179                    flagged=0/10  suspects=0  steps_left=47
+    Step  4: INSPECT acc_0096                    flagged=0/10  suspects=0  steps_left=46
+    Step  5: INSPECT acc_0177                    flagged=0/10  suspects=0  steps_left=45
+    Step  6: INSPECT acc_0122                    flagged=0/10  suspects=0  steps_left=44
+    Step  7: INSPECT acc_0189                    flagged=0/10  suspects=0  steps_left=43
+    Step  8: INSPECT acc_0174                    flagged=0/10  suspects=0  steps_left=42
+    Step  9: INSPECT acc_0144                    flagged=0/10  suspects=0  steps_left=41
+    Step 10: FLAG acc_0144                       flagged=1/10  suspects=8  steps_left=41
+    Step 11: INSPECT acc_0181                    flagged=1/10  suspects=8  steps_left=40
+    Step 12: FLAG acc_0181                       flagged=2/10  suspects=8  steps_left=40
+    Step 13: INSPECT acc_0022                    flagged=2/10  suspects=8  steps_left=39
+    Step 14: FLAG acc_0022                       flagged=3/10  suspects=7  steps_left=39
+    Step 15: INSPECT acc_0092                    flagged=3/10  suspects=7  steps_left=38
+    Step 16: FLAG acc_0092                       flagged=4/10  suspects=6  steps_left=38
+    Step 17: INSPECT acc_0097                    flagged=4/10  suspects=6  steps_left=37
+    Step 18: FLAG acc_0097                       flagged=5/10  suspects=5  steps_left=37
+    Step 19: INSPECT acc_0187                    flagged=5/10  suspects=5  steps_left=36
+    Step 20: FLAG acc_0187                       flagged=6/10  suspects=4  steps_left=36
+    Step 21: INSPECT acc_0093                    flagged=6/10  suspects=4  steps_left=35
+    Step 22: FLAG acc_0093                       flagged=7/10  suspects=3  steps_left=35
+    Step 23: INSPECT acc_0172                    flagged=7/10  suspects=3  steps_left=34
+    Step 24: FLAG acc_0172                       flagged=8/10  suspects=2  steps_left=34
+    Step 25: INSPECT acc_0058                    flagged=8/10  suspects=2  steps_left=33
+    Step 26: FLAG acc_0058                       flagged=9/10  suspects=1  steps_left=33
+    Step 27: INSPECT acc_0131                    flagged=9/10  suspects=1  steps_left=32
+    Step 28: FLAG acc_0131                       flagged=10/10  suspects=0  steps_left=32
+    Step 29: SUBMIT                              flagged=10/10  suspects=0  steps_left=32
+    → Episode ended: [WIN] TP=10 FP=0 FN=0 Recall=1.00 Precision=1.00 Episode reward=18.82
+    ★ GRADER SCORE: 0.9640
+
+  --- LLM Agent: task=hard, seed=0, model=Bedrock/mistral.ministral-3-8b-instruct ---
+    Step  1: INSPECT acc_0704                    flagged=0/10  suspects=0  steps_left=79
+    Step  2: INSPECT acc_0289                    flagged=0/10  suspects=0  steps_left=78
+    Step  3: INSPECT acc_0826                    flagged=0/10  suspects=0  steps_left=77
+    Step  4: INSPECT acc_0927                    flagged=0/10  suspects=0  steps_left=76
+    Step  5: INSPECT acc_0441                    flagged=0/10  suspects=0  steps_left=75
+    Step  6: INSPECT acc_0871                    flagged=0/10  suspects=0  steps_left=74
+    Step  7: INSPECT acc_0880                    flagged=0/10  suspects=0  steps_left=73
+    Step  8: INSPECT acc_0652                    flagged=0/10  suspects=0  steps_left=72
+    Step  9: INSPECT acc_0939                    flagged=0/10  suspects=0  steps_left=71
+    Step 10: INSPECT acc_0070                    flagged=0/10  suspects=0  steps_left=70
+    Step 11: INSPECT acc_0915                    flagged=0/10  suspects=0  steps_left=69
+    Step 12: INSPECT acc_0443                    flagged=0/10  suspects=0  steps_left=68
+    Step 13: INSPECT acc_0970                    flagged=0/10  suspects=0  steps_left=67
+    Step 14: INSPECT acc_0028                    flagged=0/10  suspects=0  steps_left=66
+    Step 15: INSPECT acc_0792                    flagged=0/10  suspects=0  steps_left=65
+    Step 16: INSPECT acc_0579                    flagged=0/10  suspects=0  steps_left=64
+    Step 17: INSPECT acc_0037                    flagged=0/10  suspects=0  steps_left=63
+    Step 18: INSPECT acc_0295                    flagged=0/10  suspects=0  steps_left=62
+    Step 19: INSPECT acc_0438                    flagged=0/10  suspects=0  steps_left=61
+    Step 20: INSPECT acc_0439                    flagged=0/10  suspects=0  steps_left=60
+    Step 21: FLAG acc_0439                       flagged=1/10  suspects=5  steps_left=60
+    Step 22: INSPECT acc_0237                    flagged=1/10  suspects=5  steps_left=59
+    Step 23: FLAG acc_0237                       flagged=2/10  suspects=6  steps_left=59
+    Step 24: INSPECT acc_0621                    flagged=2/10  suspects=6  steps_left=58
+    Step 25: FLAG acc_0621                       flagged=3/10  suspects=6  steps_left=58
+    Step 26: INSPECT acc_0389                    flagged=3/10  suspects=6  steps_left=57
+    Step 27: INSPECT acc_0160                    flagged=3/10  suspects=6  steps_left=56
+    Step 28: FLAG acc_0160                       flagged=4/10  suspects=6  steps_left=56
+    Step 29: INSPECT acc_0549                    flagged=4/10  suspects=6  steps_left=55
+    Step 30: FLAG acc_0549                       flagged=5/10  suspects=5  steps_left=55
+    Step 31: INSPECT acc_0658                    flagged=5/10  suspects=5  steps_left=54
+    Step 32: FLAG acc_0658                       flagged=6/10  suspects=4  steps_left=54
+    Step 33: INSPECT acc_0290                    flagged=6/10  suspects=4  steps_left=53
+    Step 34: FLAG acc_0389                       flagged=7/10  suspects=3  steps_left=53
+    Step 35: FLAG acc_0290                       flagged=8/10  suspects=2  steps_left=53
+    Step 36: INSPECT acc_0124                    flagged=8/10  suspects=2  steps_left=52
+    Step 37: FLAG acc_0124                       flagged=9/10  suspects=1  steps_left=52
+    Step 38: INSPECT acc_0507                    flagged=9/10  suspects=1  steps_left=51
+    Step 39: FLAG acc_0507                       flagged=10/10  suspects=0  steps_left=51
+    Step 40: SUBMIT                              flagged=10/10  suspects=0  steps_left=51
+    → Episode ended: [WIN] TP=10 FP=0 FN=0 Recall=1.00 Precision=1.00 Episode reward=17.71
+    ★ GRADER SCORE: 0.9637
+
+  Summary: easy=0.9667  medium=0.9640  hard=0.9637
+
+============================================================
+PHASE 3: Score Variance (seeds=[0, 1, 2])
+============================================================
+
+  --- LLM Agent: task=easy, seed=0, model=Bedrock/mistral.ministral-3-8b-instruct ---
+    Step  1: INSPECT acc_0043                    flagged=0/10  suspects=0  steps_left=29
+    Step  2: FLAG acc_0043                       flagged=1/10  suspects=8  steps_left=29
+    Step  3: INSPECT acc_0036                    flagged=1/10  suspects=8  steps_left=28
+    Step  4: FLAG acc_0036                       flagged=2/10  suspects=8  steps_left=28
+    Step  5: INSPECT acc_0001                    flagged=2/10  suspects=8  steps_left=27
+    Step  6: FLAG acc_0001                       flagged=3/10  suspects=7  steps_left=27
+    Step  7: INSPECT acc_0014                    flagged=3/10  suspects=7  steps_left=26
+
+    Step  8: INSPECT acc_0012                    flagged=3/10  suspects=7  steps_left=25
+    Step  9: FLAG acc_0014                       flagged=4/10  suspects=6  steps_left=25
+    Step 10: INSPECT acc_0000                    flagged=4/10  suspects=6  steps_left=24
+    Step 11: FLAG acc_0012                       flagged=5/10  suspects=5  steps_left=24
+    Step 12: INSPECT acc_0027                    flagged=5/10  suspects=5  steps_left=23
+    Step 13: FLAG acc_0000                       flagged=6/10  suspects=4  steps_left=23
+    Step 14: INSPECT acc_0047                    flagged=6/10  suspects=4  steps_left=22
+    Step 15: FLAG acc_0027                       flagged=7/10  suspects=3  steps_left=22
+    Step 16: FLAG acc_0047                       flagged=8/10  suspects=2  steps_left=22
+    Step 17: INSPECT acc_0007                    flagged=8/10  suspects=2  steps_left=21
+    Step 18: FLAG acc_0007                       flagged=9/10  suspects=1  steps_left=21
+    Step 19: INSPECT acc_0028                    flagged=9/10  suspects=1  steps_left=20
+    Step 20: FLAG acc_0028                       flagged=10/10  suspects=0  steps_left=20
+    Step 21: SUBMIT                              flagged=10/10  suspects=0  steps_left=20
+    → Episode ended: [WIN] TP=10 FP=0 FN=0 Recall=1.00 Precision=1.00 Episode reward=18.90
+    ★ GRADER SCORE: 0.9667
+
+  --- LLM Agent: task=easy, seed=1, model=Bedrock/mistral.ministral-3-8b-instruct ---
+    Step  1: INSPECT acc_0034                    flagged=0/10  suspects=0  steps_left=29
+    Step  2: INSPECT acc_0003                    flagged=0/10  suspects=0  steps_left=28
+    Step  3: INSPECT acc_0049                    flagged=0/10  suspects=0  steps_left=27
+    Step  4: INSPECT acc_0006                    flagged=0/10  suspects=0  steps_left=26
+    Step  5: INSPECT acc_0047                    flagged=0/10  suspects=0  steps_left=25
+    Step  6: FLAG acc_0047                       flagged=1/10  suspects=9  steps_left=25
+    Step  7: INSPECT acc_0009                    flagged=1/10  suspects=9  steps_left=24
+    Step  8: FLAG acc_0009                       flagged=2/10  suspects=8  steps_left=24
+    Step  9: INSPECT acc_0046                    flagged=2/10  suspects=8  steps_left=23
+    Step 10: FLAG acc_0046                       flagged=3/10  suspects=7  steps_left=23
+    Step 11: INSPECT acc_0014                    flagged=3/10  suspects=7  steps_left=22
+    Step 12: INSPECT acc_0021                    flagged=3/10  suspects=7  steps_left=21
+    Step 13: FLAG acc_0014                       flagged=4/10  suspects=6  steps_left=21
+    Step 14: INSPECT acc_0002                    flagged=4/10  suspects=6  steps_left=20
+    Step 15: FLAG acc_0021                       flagged=5/10  suspects=5  steps_left=20
+    Step 16: INSPECT acc_0048                    flagged=5/10  suspects=5  steps_left=19
+    Step 17: INSPECT acc_0029                    flagged=5/10  suspects=5  steps_left=18
+    Step 18: FLAG acc_0029                       flagged=6/10  suspects=4  steps_left=18
+    Step 19: FLAG acc_0048                       flagged=7/10  suspects=3  steps_left=18
+    Step 20: FLAG acc_0002                       flagged=8/10  suspects=2  steps_left=18
+    Step 21: INSPECT acc_0015                    flagged=8/10  suspects=2  steps_left=17
+    Step 22: FLAG acc_0015                       flagged=9/10  suspects=1  steps_left=17
+    Step 23: INSPECT acc_0005                    flagged=9/10  suspects=1  steps_left=16
+    Step 24: FLAG acc_0005                       flagged=10/10  suspects=0  steps_left=16
+    Step 25: SUBMIT                              flagged=10/10  suspects=0  steps_left=16
+    → Episode ended: [WIN] TP=10 FP=0 FN=0 Recall=1.00 Precision=1.00 Episode reward=18.86
+    ★ GRADER SCORE: 0.9533
+
+  --- LLM Agent: task=easy, seed=2, model=Bedrock/mistral.ministral-3-8b-instruct ---
+    Step  1: INSPECT acc_0040                    flagged=0/10  suspects=0  steps_left=29
+    Step  2: INSPECT acc_0017                    flagged=0/10  suspects=0  steps_left=28
+    Step  3: INSPECT acc_0025                    flagged=0/10  suspects=0  steps_left=27
+    Step  4: INSPECT acc_0026                    flagged=0/10  suspects=0  steps_left=26
+    Step  5: INSPECT acc_0038                    flagged=0/10  suspects=0  steps_left=25
+    Step  6: FLAG acc_0029                       flagged=1/10  suspects=9  steps_left=25
+    Step  7: INSPECT acc_0006                    flagged=1/10  suspects=9  steps_left=24
+    Step  8: FLAG acc_0006                       flagged=2/10  suspects=8  steps_left=24
+    Step  9: INSPECT acc_0033                    flagged=2/10  suspects=8  steps_left=23
+    Step 10: FLAG acc_0033                       flagged=3/10  suspects=7  steps_left=23
+    Step 11: INSPECT acc_0015                    flagged=3/10  suspects=7  steps_left=22
+    Step 12: FLAG acc_0015                       flagged=4/10  suspects=6  steps_left=22
+    Step 13: INSPECT acc_0022                    flagged=4/10  suspects=6  steps_left=21
+    Step 14: INSPECT acc_0009                    flagged=4/10  suspects=6  steps_left=20
+    Step 15: FLAG acc_0022                       flagged=5/10  suspects=5  steps_left=20
+    Step 16: INSPECT acc_0004                    flagged=5/10  suspects=5  steps_left=19
+    Step 17: FLAG acc_0009                       flagged=6/10  suspects=4  steps_left=19
+    Step 18: FLAG acc_0004                       flagged=7/10  suspects=3  steps_left=19
+    Step 19: INSPECT acc_0024                    flagged=7/10  suspects=3  steps_left=18
+    Step 20: FLAG acc_0024                       flagged=8/10  suspects=2  steps_left=18
+    Step 21: INSPECT acc_0049                    flagged=8/10  suspects=2  steps_left=17
+    Step 22: FLAG acc_0049                       flagged=9/10  suspects=1  steps_left=17
+    Step 23: INSPECT acc_0035                    flagged=9/10  suspects=1  steps_left=16
+    Step 24: FLAG acc_0035                       flagged=10/10  suspects=0  steps_left=16
+    Step 25: SUBMIT                              flagged=10/10  suspects=0  steps_left=16
+    → Episode ended: [WIN] TP=10 FP=0 FN=0 Recall=1.00 Precision=1.00 Episode reward=18.86
+    ★ GRADER SCORE: 0.9533
+
+  easy: scores=['0.967', '0.953', '0.953']  mean=0.9578  var=0.000040
+
+  --- LLM Agent: task=medium, seed=0, model=Bedrock/mistral.ministral-3-8b-instruct ---
+    Step  1: INSPECT acc_0008                    flagged=0/10  suspects=0  steps_left=49
+    Step  2: INSPECT acc_0074                    flagged=0/10  suspects=0  steps_left=48
+    Step  3: INSPECT acc_0179                    flagged=0/10  suspects=0  steps_left=47
+    Step  4: INSPECT acc_0096                    flagged=0/10  suspects=0  steps_left=46
+    Step  5: INSPECT acc_0177                    flagged=0/10  suspects=0  steps_left=45
+    Step  6: INSPECT acc_0122                    flagged=0/10  suspects=0  steps_left=44
+    Step  7: INSPECT acc_0189                    flagged=0/10  suspects=0  steps_left=43
+    Step  8: INSPECT acc_0174                    flagged=0/10  suspects=0  steps_left=42
+    Step  9: INSPECT acc_0144                    flagged=0/10  suspects=0  steps_left=41
+    Step 10: FLAG acc_0144                       flagged=1/10  suspects=8  steps_left=41
+    Step 11: INSPECT acc_0181                    flagged=1/10  suspects=8  steps_left=40
+    Step 12: FLAG acc_0181                       flagged=2/10  suspects=8  steps_left=40
+    Step 13: INSPECT acc_0022                    flagged=2/10  suspects=8  steps_left=39
+    Step 14: FLAG acc_0022                       flagged=3/10  suspects=7  steps_left=39
+    Step 15: INSPECT acc_0092                    flagged=3/10  suspects=7  steps_left=38
+    Step 16: FLAG acc_0092                       flagged=4/10  suspects=6  steps_left=38
+    Step 17: INSPECT acc_0097                    flagged=4/10  suspects=6  steps_left=37
+    Step 18: FLAG acc_0097                       flagged=5/10  suspects=5  steps_left=37
+    Step 19: INSPECT acc_0187                    flagged=5/10  suspects=5  steps_left=36
+    Step 20: FLAG acc_0187                       flagged=6/10  suspects=4  steps_left=36
+    Step 21: INSPECT acc_0093                    flagged=6/10  suspects=4  steps_left=35
+    Step 22: FLAG acc_0093                       flagged=7/10  suspects=3  steps_left=35
+    Step 23: INSPECT acc_0172                    flagged=7/10  suspects=3  steps_left=34
+    Step 24: FLAG acc_0172                       flagged=8/10  suspects=2  steps_left=34
+    Step 25: INSPECT acc_0058                    flagged=8/10  suspects=2  steps_left=33
+    Step 26: FLAG acc_0058                       flagged=9/10  suspects=1  steps_left=33
+    Step 27: INSPECT acc_0131                    flagged=9/10  suspects=1  steps_left=32
+    Step 28: FLAG acc_0131                       flagged=10/10  suspects=0  steps_left=32
+    Step 29: SUBMIT                              flagged=10/10  suspects=0  steps_left=32
+    → Episode ended: [WIN] TP=10 FP=0 FN=0 Recall=1.00 Precision=1.00 Episode reward=18.82
+    ★ GRADER SCORE: 0.9640
+
+  --- LLM Agent: task=medium, seed=1, model=Bedrock/mistral.ministral-3-8b-instruct ---
+    Step  1: INSPECT acc_0171                    flagged=0/10  suspects=0  steps_left=49
+    Step  2: INSPECT acc_0099                    flagged=0/10  suspects=0  steps_left=48
+    Step  3: INSPECT acc_0152                    flagged=0/10  suspects=0  steps_left=47
+    Step  4: INSPECT acc_0092                    flagged=0/10  suspects=0  steps_left=46
+    Step  5: INSPECT acc_0078                    flagged=0/10  suspects=0  steps_left=45
+    Step  6: INSPECT acc_0112                    flagged=0/10  suspects=0  steps_left=44
+    Step  7: INSPECT acc_0012                    flagged=0/10  suspects=0  steps_left=43
+    Step  8: FLAG acc_0012                       flagged=1/10  suspects=8  steps_left=43
+    Step  9: INSPECT acc_0033                    flagged=1/10  suspects=8  steps_left=42
+    Step 10: FLAG acc_0033                       flagged=2/10  suspects=8  steps_left=42
+    Step 11: INSPECT acc_0174                    flagged=2/10  suspects=8  steps_left=41
+    Step 12: FLAG acc_0174                       flagged=3/10  suspects=7  steps_left=41
+    Step 13: INSPECT acc_0187                    flagged=3/10  suspects=7  steps_left=40
+    Step 14: FLAG acc_0187                       flagged=4/10  suspects=6  steps_left=40
+    Step 15: INSPECT acc_0079                    flagged=4/10  suspects=6  steps_left=39
+    Step 16: FLAG acc_0032                       flagged=5/10  suspects=5  steps_left=39
+    Step 17: INSPECT acc_0023                    flagged=5/10  suspects=5  steps_left=38
+    Step 18: FLAG acc_0023                       flagged=6/10  suspects=4  steps_left=38
+    Step 19: INSPECT acc_0146                    flagged=6/10  suspects=4  steps_left=37
+    Step 20: FLAG acc_0079                       flagged=7/10  suspects=3  steps_left=37
+    Step 21: INSPECT acc_0019                    flagged=7/10  suspects=3  steps_left=36
+    Step 22: FLAG acc_0146                       flagged=8/10  suspects=2  steps_left=36
+    Step 23: FLAG acc_0019                       flagged=9/10  suspects=1  steps_left=36
+    Step 24: INSPECT acc_0131                    flagged=9/10  suspects=1  steps_left=35
+    Step 25: FLAG acc_0131                       flagged=10/10  suspects=0  steps_left=35
+    Step 26: SUBMIT                              flagged=10/10  suspects=0  steps_left=35
+    → Episode ended: [WIN] TP=10 FP=0 FN=0 Recall=1.00 Precision=1.00 Episode reward=18.85
+    ★ GRADER SCORE: 0.9700
+
+  --- LLM Agent: task=medium, seed=2, model=Bedrock/mistral.ministral-3-8b-instruct ---
+    Step  1: INSPECT acc_0189                    flagged=0/10  suspects=0  steps_left=49
+    Step  2: INSPECT acc_0107                    flagged=4/10  suspects=6  steps_left=20
+    Step  3: FLAG acc_0014                       flagged=10/10  suspects=0  steps_left=20
+    Step  4: SUBMIT                              flagged=0/10  suspects=0  steps_left=42
+    → Episode ended: [LOSS] TP=0 FP=0 FN=10 Recall=0.00 Precision=0.00 Episode reward=-2.08
+    ★ GRADER SCORE: 0.0000
+
+  medium: scores=['0.964', '0.970', '0.000']  mean=0.6447  var=0.207804
+
+  --- LLM Agent: task=hard, seed=0, model=Bedrock/mistral.ministral-3-8b-instruct ---
+    Step  1: INSPECT acc_0704                    flagged=0/10  suspects=0  steps_left=79
+    Step  2: INSPECT acc_0289                    flagged=0/10  suspects=0  steps_left=31
+    Step  3: INSPECT acc_0105                    flagged=0/10  suspects=0  steps_left=67
+    Step  4: INSPECT acc_0374                    flagged=0/10  suspects=0  steps_left=57
+    Step  5: INSPECT acc_0577                    flagged=10/10  suspects=0  steps_left=0
+    ★ GRADER SCORE: 0.9000
+
+  --- LLM Agent: task=hard, seed=1, model=Bedrock/mistral.ministral-3-8b-instruct ---
+    Step  1: INSPECT acc_0014                    flagged=0/10  suspects=0  steps_left=79
+    Step  2: INSPECT acc_0835                    flagged=0/10  suspects=0  steps_left=78
+    Step  3: INSPECT acc_0855                    flagged=0/10  suspects=0  steps_left=77
+    Step  4: INSPECT acc_0930                    flagged=0/10  suspects=0  steps_left=76
+    Step  5: INSPECT acc_0336                    flagged=0/10  suspects=0  steps_left=75
+    Step  6: INSPECT acc_0929                    flagged=0/10  suspects=0  steps_left=74
+    Step  7: INSPECT acc_0076                    flagged=0/10  suspects=0  steps_left=73
+    Step  8: INSPECT acc_0543                    flagged=0/10  suspects=0  steps_left=72
+    Step  9: INSPECT acc_0590                    flagged=0/10  suspects=0  steps_left=71
+    Step 10: INSPECT acc_0401                    flagged=0/10  suspects=0  steps_left=70
+    Step 11: INSPECT acc_0322                    flagged=0/10  suspects=0  steps_left=69
+    Step 12: INSPECT acc_0154                    flagged=0/10  suspects=0  steps_left=68
+    Step 13: INSPECT acc_0374                    flagged=0/10  suspects=0  steps_left=67
+    Step 14: INSPECT acc_0549                    flagged=0/10  suspects=0  steps_left=66
+    Step 15: INSPECT acc_0903                    flagged=0/10  suspects=0  steps_left=65
+    Step 16: INSPECT acc_0976                    flagged=0/10  suspects=0  steps_left=64
+    Step 17: INSPECT acc_0620                    flagged=0/10  suspects=0  steps_left=63
+    Step 18: INSPECT acc_0017                    flagged=0/10  suspects=0  steps_left=62
+    Step 19: INSPECT acc_0222                    flagged=0/10  suspects=0  steps_left=61
+    Step 20: INSPECT acc_0536                    flagged=0/10  suspects=0  steps_left=60
+    Step 21: INSPECT acc_0112                    flagged=0/10  suspects=0  steps_left=59
+    Step 22: INSPECT acc_0577                    flagged=0/10  suspects=0  steps_left=58
+    Step 23: INSPECT acc_0517                    flagged=0/10  suspects=0  steps_left=57
+    Step 24: INSPECT acc_0113                    flagged=0/10  suspects=0  steps_left=56
+    Step 25: INSPECT acc_0167                    flagged=0/10  suspects=0  steps_left=55
+    Step 26: INSPECT acc_0697                    flagged=0/10  suspects=0  steps_left=54
+    Step 27: INSPECT acc_0271                    flagged=0/10  suspects=0  steps_left=53
+    Step 28: INSPECT acc_0681                    flagged=0/10  suspects=0  steps_left=52
+    Step 29: INSPECT acc_0530                    flagged=0/10  suspects=0  steps_left=51
+    Step 30: INSPECT acc_0353                    flagged=0/10  suspects=0  steps_left=50
+    Step 31: INSPECT acc_0652                    flagged=0/10  suspects=0  steps_left=49
+    Step 32: INSPECT acc_0777                    flagged=0/10  suspects=0  steps_left=48
+    Step 33: INSPECT acc_0265                    flagged=0/10  suspects=0  steps_left=47
+    Step 34: INSPECT acc_0788                    flagged=0/10  suspects=0  steps_left=46
+    Step 35: INSPECT acc_0033                    flagged=0/10  suspects=0  steps_left=45
+    Step 36: INSPECT acc_0187                    flagged=0/10  suspects=0  steps_left=44
+    Step 37: INSPECT acc_0445                    flagged=0/10  suspects=0  steps_left=43
+    Step 38: INSPECT acc_0846                    flagged=0/10  suspects=0  steps_left=42
+    Step 39: INSPECT acc_0659                    flagged=0/10  suspects=0  steps_left=41
+    Step 40: INSPECT acc_0768                    flagged=0/10  suspects=0  steps_left=40
+    Step 41: INSPECT acc_0677                    flagged=0/10  suspects=0  steps_left=39
+    Step 42: INSPECT acc_0539                    flagged=0/10  suspects=0  steps_left=38
+    Step 43: INSPECT acc_0742                    flagged=0/10  suspects=0  steps_left=37
+    Step 44: INSPECT acc_0503                    flagged=0/10  suspects=0  steps_left=36
+    Step 45: INSPECT acc_0876                    flagged=0/10  suspects=0  steps_left=35
+    Step 46: INSPECT acc_0639                    flagged=0/10  suspects=0  steps_left=34
+    Step 47: INSPECT acc_0494                    flagged=0/10  suspects=0  steps_left=33
+    Step 48: INSPECT acc_0898                    flagged=0/10  suspects=0  steps_left=32
+    Step 49: INSPECT acc_0553                    flagged=0/10  suspects=0  steps_left=31
+    Step 50: INSPECT acc_0588                    flagged=0/10  suspects=0  steps_left=30
+    Step 51: INSPECT acc_0194                    flagged=0/10  suspects=0  steps_left=29
+    Step 52: INSPECT acc_0810                    flagged=0/10  suspects=0  steps_left=28
+    Step 53: INSPECT acc_0355                    flagged=0/10  suspects=0  steps_left=27
+    Step 54: INSPECT acc_0363                    flagged=0/10  suspects=0  steps_left=26
+    Step 55: INSPECT acc_0221                    flagged=0/10  suspects=0  steps_left=25
+    Step 56: INSPECT acc_0580                    flagged=0/10  suspects=0  steps_left=24
+    Step 57: INSPECT acc_0534                    flagged=0/10  suspects=0  steps_left=23
+    Step 58: INSPECT acc_0778                    flagged=0/10  suspects=0  steps_left=22
+    Step 59: INSPECT acc_0998                    flagged=0/10  suspects=0  steps_left=21
+    Step 60: INSPECT acc_0233                    flagged=0/10  suspects=0  steps_left=20
+    Step 61: INSPECT acc_0052                    flagged=0/10  suspects=0  steps_left=19
+    Step 62: INSPECT acc_0813                    flagged=4/10  suspects=6  steps_left=21
+    Step 63: FLAG acc_0014                       flagged=5/10  suspects=5  steps_left=21
+    Step 64: FLAG acc_0028                       flagged=6/10  suspects=4  steps_left=21
+    Step 65: FLAG acc_0000                       flagged=7/10  suspects=3  steps_left=21
+    Step 66: FLAG acc_0012                       flagged=8/10  suspects=2  steps_left=21
+    Step 67: FLAG acc_0007                       flagged=9/10  suspects=1  steps_left=21
+    Step 68: FLAG acc_0036                       flagged=10/10  suspects=0  steps_left=21
+    Step 69: SUBMIT                              flagged=10/10  suspects=0  steps_left=21
+    → Episode ended: [WIN] TP=10 FP=0 FN=0 Recall=1.00 Precision=1.00 Episode reward=18.91
+    ★ GRADER SCORE: 0.9700
+
+  --- LLM Agent: task=hard, seed=2, model=Bedrock/mistral.ministral-3-8b-instruct ---
+    Step  1: INSPECT acc_0813                    flagged=0/10  suspects=0  steps_left=79
+    Step  2: INSPECT acc_0430                    flagged=0/10  suspects=0  steps_left=78
+    Step  3: INSPECT acc_0817                    flagged=0/10  suspects=0  steps_left=77
+    Step  4: INSPECT acc_0175                    flagged=0/10  suspects=0  steps_left=76
+    Step  5: INSPECT acc_0523                    flagged=1/10  suspects=1  steps_left=72
+    Step  6: INSPECT acc_0797                    flagged=1/10  suspects=1  steps_left=66
+    Step  7: INSPECT acc_0664                    flagged=1/10  suspects=1  steps_left=65
+    Step  8: INSPECT acc_0255                    flagged=0/10  suspects=0  steps_left=42
+    Step  9: INSPECT acc_0144                    flagged=0/10  suspects=0  steps_left=41
+    Step 10: FLAG acc_0144                       flagged=1/10  suspects=8  steps_left=40
+    Step 11: INSPECT acc_0181                    flagged=1/10  suspects=8  steps_left=39
+    Step 12: FLAG acc_0181                       flagged=7/10  suspects=11  steps_left=51
+    Step 13: FLAG acc_0389                       flagged=8/10  suspects=10  steps_left=51
+    Step 14: FLAG acc_0658                       flagged=9/10  suspects=9  steps_left=51
+    Step 15: FLAG acc_0507                       flagged=10/10  suspects=0  steps_left=16
+    Step 16: SUBMIT                              flagged=0/10  suspects=0  steps_left=30
+    → Episode ended: [LOSS] TP=0 FP=0 FN=10 Recall=0.00 Precision=0.00 Episode reward=-2.00
+    ★ GRADER SCORE: 0.0000
+
+  hard: scores=['0.900', '0.970', '0.000']  mean=0.6233  var=0.195089
+
+============================================================
+EVALUATION COMPLETE
+============================================================
+ubuntu@ip-172-31-33-59:~/meta/meta-hack-26$
+ubuntu@ip-172-31-33-59:~/meta/meta-hack-26$
