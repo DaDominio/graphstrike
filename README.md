@@ -20,6 +20,12 @@ tags:
 > **OpenEnv Hackathon × SCALER School of Technology**
 > Live deployment: [huggingface.co/spaces/Pandago/graphstrike](https://huggingface.co/spaces/Pandago/graphstrike)
 
+## Problem Statement
+
+**The task:** A social network contains fake accounts organised into a single coordinated ring of 10. The ring behaves in a coordinated way — same posting hour, same IP subnet, stolen celebrity photos, copy-paste bios. The agent must find all 10 by navigating a limited step budget, inspecting accounts, and flagging suspects.
+
+## Proposed Solution
+
 An OpenEnv-compatible reinforcement learning environment where an LLM agent must identify all 10 members of a coordinated fake account ring hidden inside a synthetic social network. The agent learns via **Reflexion** and a **dynamic hybrid rule/LLM policy** — not via gradient updates or fine-tuning.
 
 ---
@@ -91,7 +97,6 @@ The environment produces a clear **capability gradient** that tracks with model 
 4. [Data Model](#4-data-model)
 5. [The RL Environment](#5-the-rl-environment)
 6. [Risk Scoring Mathematics](#6-risk-scoring-mathematics)
-7. [Account Status State Machine](#7-account-status-state-machine)
 8. [The LLM Policy (Qwen3 via Bedrock)](#8-the-llm-policy-qwen3-via-bedrock)
 9. [Reflexion — How the Agent Learns](#9-reflexion--how-the-agent-learns)
 10. [Hybrid Policy — The Novel Contribution](#10-hybrid-policy--the-novel-contribution)
@@ -106,8 +111,6 @@ The environment produces a clear **capability gradient** that tracks with model 
 ## 1. What This Is
 
 This is an **OpenEnv hackathon** submission. OpenEnv is a framework for building RL environments with a standard microservice interface (`/reset`, `/step`, `/state`) so that any agent implementation can plug in.
-
-**The task:** A social network contains fake accounts organised into a single coordinated ring of 10. The ring behaves in a coordinated way — same posting hour, same IP subnet, stolen celebrity photos, copy-paste bios. The agent must find all 10 by navigating a limited step budget, inspecting accounts, and flagging suspects.
 
 **What makes this non-trivial:**
 
@@ -279,42 +282,6 @@ else:
 
 Maximum possible score = 1.00
 ```
-
----
-
-## 7. Account Status State Machine
-
-```
-         ┌──────────────┐   FLAG cascade (neighbor of flagged   ┌──────────────────┐
-         │    NORMAL    │ ──────────────────────────────────►   │     SUSPECT      │
-         └──────────────┘   OR shares ip_cluster_id)            └──────────────────┘
-                │                                                        │
-         FLAG(account)                                           FLAG(account)
-                │                                                        │
-                └─────────────────────┬──────────────────────────────────┘
-                                      ▼
-                          ┌──────────────────────┐
-                          │   CONFIRMED_FAKE     │
-                          └──────────────────────┘
-                                      │
-                               UNFLAG(account)
-                                      │
-                                      ▼
-                               (back to NORMAL)
-```
-
-**Cascade example on easy task:**
-```
-Step 1: INSPECT acc_0003 (gang) → fake_risk ≈ 0.45
-Step 2: FLAG acc_0003
-         → acc_0017, acc_0029, acc_0041 become SUSPECT
-Step 3: INSPECT acc_0017 → fake_risk = 0.72 (flagged_neighbor_count=1)
-Step 4: FLAG acc_0017 → more suspects cascade
-Step 5: INSPECT acc_0029 → fake_risk = 0.81 (flagged_neighbor_count=2)
-...
-```
-
-Each FLAG makes the next gang member easier to find because their risk score rises.
 
 ---
 
