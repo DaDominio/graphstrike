@@ -6,7 +6,7 @@ MANDATORY ENVIRONMENT VARIABLES:
     API_BASE_URL   The API endpoint for the LLM (default: HF router)
     MODEL_NAME     The model identifier for inference
     HF_TOKEN       Your Hugging Face / API key
-    IMAGE_NAME     Docker image name (for from_docker_image mode)
+    LOCAL_IMAGE_NAME  Docker image name (optional, for from_docker_image mode)
 
 STDOUT FORMAT:
     [START] task=<task_name> env=graphstrike model=<model_name>
@@ -41,10 +41,13 @@ from models import ActionType, FakeGangAction, FakeGangObservation
 # Environment variables
 # ---------------------------------------------------------------------------
 
-IMAGE_NAME = os.getenv("IMAGE_NAME", "graphstrike")
-API_KEY = os.getenv("HF_TOKEN") or os.getenv("API_KEY")
 API_BASE_URL = os.getenv("API_BASE_URL", "https://router.huggingface.co/v1")
 MODEL_NAME = os.getenv("MODEL_NAME", "Qwen/Qwen2.5-72B-Instruct")
+HF_TOKEN = os.getenv("HF_TOKEN")
+LOCAL_IMAGE_NAME = os.getenv("LOCAL_IMAGE_NAME")  # optional — from_docker_image mode
+
+# Resolved API key: HF_TOKEN is primary, API_KEY is fallback
+API_KEY = HF_TOKEN or os.getenv("API_KEY")
 
 BENCHMARK = "graphstrike"
 MAX_STEPS_OVERRIDE = None  # Use environment's max_steps
