@@ -262,36 +262,30 @@ Bonuses:
 
 ### Formulas
 
-$$
-\begin{aligned}
-\mathrm{node\_risk} &= 0.60\,\mathrm{photo\_reuse\_score} + 0.40\,\mathrm{bio\_template\_score} \\
-\mathrm{age\_norm} &= \min\left(1.0, \frac{\mathrm{account\_age\_days}}{365.0}\right) \\
-\mathrm{behavior\_risk} &= 0.55\,(1-\mathrm{age\_norm}) + 0.45\,\mathrm{post\_hour\_cluster\_score}
-\end{aligned}
-$$
+```
+node_risk     = 0.60 × photo_reuse_score + 0.40 × bio_template_score
 
-$$
-\begin{aligned}
-\mathrm{flagged\_neighbor\_ratio} &= \frac{\mathrm{flagged\_neighbor\_count}}{\max(\mathrm{inspected\_neighbor\_count}, 1)} \\
-\mathrm{graph\_risk} &= 0.45\,\mathrm{flagged\_neighbor\_ratio} + 0.35\,\mathrm{mutual\_follow\_rate} + 0.20\,\mathrm{avg\_neighbor\_photo\_reuse}
-\end{aligned}
-$$
+age_norm      = min(1.0, account_age_days / 365.0)
+behavior_risk = 0.55 × (1 − age_norm) + 0.45 × post_hour_cluster_score
 
-$$
-\begin{aligned}
-\mathrm{hub\_legitimacy} =\;& 0.45\,\mathrm{followers\_norm} \\
-&+ 0.25\,(1-\mathrm{follow\_ratio\_norm}) \\
-&+ 0.20\,\mathrm{age\_norm} \\
-&+ 0.10\,(1-\mathrm{suspicious\_mutual\_ratio})
-\end{aligned}
-$$
+flagged_neighbor_ratio = flagged_neighbor_count / max(inspected_neighbor_count, 1)
+graph_risk    = 0.45 × flagged_neighbor_ratio
+              + 0.35 × mutual_follow_rate
+              + 0.20 × avg_neighbor_photo_reuse
 
-$$
-\begin{aligned}
-\mathrm{fake\_risk} = \operatorname{clip}\Big(&0.30\,\mathrm{node\_risk} + 0.25\,\mathrm{behavior\_risk} \\
-&+ 0.45\,\mathrm{graph\_risk} - 0.25\,\mathrm{hub\_legitimacy},\; 0.0,\; 1.0\Big)
-\end{aligned}
-$$
+hub_legitimacy = 0.45 × followers_norm          # log-scaled follower count
+               + 0.25 × (1 − follow_ratio_norm)  # low follow:follower ratio
+               + 0.20 × age_norm                 # old account
+               + 0.10 × (1 − suspicious_mutual_ratio)
+
+fake_risk = clip(
+    0.30 × node_risk
+  + 0.25 × behavior_risk
+  + 0.45 × graph_risk     ← highest weight: hardest to fake
+  − 0.25 × hub_legitimacy,
+  0.0, 1.0
+)
+```
 
 **Risk classification:** `< 0.35` → normal · `0.35–0.60` → suspect · `≥ 0.60` → confirmed_fake
 
