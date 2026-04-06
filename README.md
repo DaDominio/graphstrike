@@ -14,7 +14,28 @@ tags:
   - openenv
   - llm-agent
 ---
+<br>
 
+<p align="center">
+<img src="assets/logo.png" width="600"/>
+</p>
+
+<br>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/Hugging%20Face-FFD21E?style=for-the-badge&logo=huggingface&logoColor=black"/>
+  <img src="https://img.shields.io/badge/HF%20Spaces-FFBF00?style=for-the-badge&logo=huggingface&logoColor=black"/>
+  <img src="https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white"/>
+  <img src="https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white"/>
+  <img src="https://img.shields.io/badge/Gradio-F97316?style=for-the-badge&logo=gradio&logoColor=white"/>
+  <img src="https://img.shields.io/badge/OpenEnv-4B5563?style=for-the-badge&logo=envato&logoColor=white"/>
+  <img src="https://img.shields.io/badge/Amazon%20Bedrock-FF9900?style=for-the-badge&logo=amazonaws&logoColor=white"/>
+</p>
+<br>
+
+
+<br>
+<br>
 # GraphStrike : Coordinated Fake Account Ring Detection
 
 > **OpenEnv Hackathon × SCALER School of Technology**
