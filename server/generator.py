@@ -261,9 +261,19 @@ def generate_episode(task: str, seed: int) -> Dict[str, Any]:
 
     _build_edges(rng, accounts, gang_ids, cfg["intra_gang_density"])
 
-    # Choose starting visible accounts (mix of real + maybe 1 gang member)
+    # Choose starting visible accounts.
+    # Guarantee exactly 1 gang member is included so the cascade CAN start
+    # regardless of seed. The agent still has to identify WHICH account is fake
+    # (requires inspecting profiles) — so difficulty is preserved.
+    # Without this, ~31% of easy episodes and ~82% of hard episodes start with
+    # zero gang members visible, making score variance seed-luck rather than
+    # agent skill.
     starting_count = cfg["starting_visible"]
-    starting_visible = rng.sample(all_ids, starting_count)
+    forced_gang = rng.sample(gang_ids, 1)          # exactly 1 gang member
+    rest_pool = [i for i in all_ids if i not in forced_gang]
+    additional = rng.sample(rest_pool, starting_count - 1)
+    starting_visible = forced_gang + additional
+    rng.shuffle(starting_visible)                   # don't reveal which is fake
 
     return {
         "episode_id": str(uuid.uuid4()),
