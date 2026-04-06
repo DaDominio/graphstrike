@@ -260,49 +260,9 @@ Bonuses:
 
 **File:** `server/scoring.py` — all functions are stateless and deterministic.
 
-### Formulas
+![Risk Scoring Formulas 1](assets/formulas-1.png)
 
-```
-node_risk     = 0.60 × photo_reuse_score + 0.40 × bio_template_score
-
-age_norm      = min(1.0, account_age_days / 365.0)
-behavior_risk = 0.55 × (1 − age_norm) + 0.45 × post_hour_cluster_score
-
-flagged_neighbor_ratio = flagged_neighbor_count / max(inspected_neighbor_count, 1)
-graph_risk    = 0.45 × flagged_neighbor_ratio
-              + 0.35 × mutual_follow_rate
-              + 0.20 × avg_neighbor_photo_reuse
-
-hub_legitimacy = 0.45 × followers_norm          # log-scaled follower count
-               + 0.25 × (1 − follow_ratio_norm)  # low follow:follower ratio
-               + 0.20 × age_norm                 # old account
-               + 0.10 × (1 − suspicious_mutual_ratio)
-
-fake_risk = clip(
-    0.30 × node_risk
-  + 0.25 × behavior_risk
-  + 0.45 × graph_risk     ← highest weight: hardest to fake
-  − 0.25 × hub_legitimacy,
-  0.0, 1.0
-)
-```
-
-**Risk classification:** `< 0.35` → normal · `0.35–0.60` → suspect · `≥ 0.60` → confirmed_fake
-
-### Grader Score (Submission Metric)
-
-```
-recall    = tp / 10
-precision = tp / max(tp + fp, 1)
-efficiency = max(0.0, (max_steps − steps_used) / max_steps)
-
-if recall ≥ 0.8 AND precision ≥ 0.7:
-    score = 0.55 + 0.20×recall + 0.15×precision + 0.10×efficiency
-else:
-    score = 0.30×recall + 0.10×precision
-
-Maximum possible score = 1.00
-```
+![Risk Scoring Formulas 2](assets/formulas-2.png)
 
 ---
 
