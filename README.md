@@ -41,6 +41,14 @@ tags:
 > **OpenEnv Hackathon × SCALER School of Technology**
 > Live deployment: [huggingface.co/spaces/Pandago/graphstrike](https://huggingface.co/spaces/Pandago/graphstrike)
 
+## Theme
+
+**SUPPORT**
+
+### Customer Service Agents
+
+Complex environment where agents resolve multi-step queries using external tools and APIs.
+
 ## Problem Statement
 
 **The task:** A social network contains fake accounts organised into a single coordinated ring of 10. The ring behaves in a coordinated way — same posting hour, same IP subnet, stolen celebrity photos, copy-paste bios. The agent must find all 10 by navigating a limited step budget, inspecting accounts, and flagging suspects.
