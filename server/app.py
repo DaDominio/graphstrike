@@ -13,6 +13,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from typing import Any, Dict, Optional
 
@@ -29,6 +30,15 @@ app = FastAPI(
     version="1.0.0",
 )
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
+
+# Serve project images at /static/* and /img/* (NOT /assets/ — Gradio uses that path for its own JS/CSS)
+_PROJECT_ROOT = Path(__file__).parent.parent
+_ASSETS_DIR = _PROJECT_ROOT / "assets"
+_IMAGES_DIR = _PROJECT_ROOT / "images"
+if _ASSETS_DIR.exists():
+    app.mount("/static", StaticFiles(directory=str(_ASSETS_DIR)), name="static")
+if _IMAGES_DIR.exists():
+    app.mount("/img", StaticFiles(directory=str(_IMAGES_DIR)), name="img")
 
 _env = FakeGangEnvironment()
 
@@ -399,31 +409,274 @@ try:
 
     # ── Build Gradio UI ───────────────────────────────────────────────────────
 
+    # ── README content (rendered as styled HTML) ─────────────────────────────
+
+    _README_HTML = """
+<style>
+.gs-readme { font-family: 'Inter', system-ui, sans-serif; color: #cbd5e1; line-height: 1.7; max-width: 960px; margin: 0 auto; padding: 8px 4px 32px; }
+.gs-readme h2 { color: #e2e8f0; font-size: 1.12em; font-weight: 700; border-bottom: 1px solid #1e3a5f; padding-bottom: 8px; margin: 32px 0 14px; letter-spacing: -0.2px; }
+.gs-readme h3 { color: #7dd3fc; font-size: 0.97em; font-weight: 600; margin: 20px 0 8px; }
+.gs-readme p  { margin: 0 0 10px; font-size: 0.92em; }
+.gs-readme code { background: #0c2340; color: #7dd3fc; padding: 2px 7px; border-radius: 4px; font-family: 'IBM Plex Mono', monospace; font-size: 0.84em; }
+.gs-readme pre { background: #0a1628; border: 1px solid #1e3a5f; border-radius: 8px; padding: 14px 18px; overflow-x: auto; margin: 10px 0 16px; }
+.gs-readme pre code { background: none; padding: 0; color: #93c5fd; font-size: 0.82em; }
+.gs-table { width: 100%; border-collapse: collapse; margin: 10px 0 18px; font-size: 0.86em; }
+.gs-table th { background: #0c2340; color: #94a3b8; font-weight: 600; padding: 9px 14px; text-align: left; border-bottom: 1px solid #1e3a5f; }
+.gs-table td { padding: 8px 14px; border-bottom: 1px solid #0f1e30; color: #cbd5e1; }
+.gs-table tr:nth-child(even) td { background: #060e1a; }
+.gs-badge { display:inline-block; padding: 2px 9px; border-radius: 4px; font-size: 0.78em; font-weight: 700; }
+.gs-badge-easy   { background:#052e16; color:#4ade80; border:1px solid #166534; }
+.gs-badge-medium { background:#2d1f00; color:#facc15; border:1px solid #92400e; }
+.gs-badge-hard   { background:#2d0a0a; color:#f87171; border:1px solid #7f1d1d; }
+.gs-card { background: #0a1628; border: 1px solid #1e3a5f; border-radius: 10px; padding: 16px 20px; margin: 10px 0; }
+.gs-card h3 { margin-top: 0; }
+.gs-formula { background: #050d18; border-left: 3px solid #3b82f6; padding: 12px 18px; border-radius: 0 8px 8px 0; margin: 12px 0; font-family: 'IBM Plex Mono', monospace; font-size: 0.83em; color: #93c5fd; white-space: pre; overflow-x: auto; }
+.gs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 14px 0; }
+.gs-stat { background: #0a1628; border: 1px solid #1e3a5f; border-radius: 8px; padding: 14px 16px; text-align: center; }
+.gs-stat-val { font-size: 1.7em; font-weight: 800; color: #38bdf8; font-family: 'IBM Plex Mono', monospace; display: block; }
+.gs-stat-lbl { font-size: 0.77em; color: #64748b; margin-top: 4px; display: block; }
+.gs-img { width: 100%; border-radius: 10px; border: 1px solid #1e3a5f; margin: 14px 0; display: block; background: #0a1628; }
+.gs-img-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 14px 0; }
+.gs-img-caption { font-size: 0.78em; color: #475569; text-align: center; margin-top: -8px; margin-bottom: 12px; font-style: italic; }
+.gs-divider { border: none; border-top: 1px solid #0f1e30; margin: 28px 0; }
+</style>
+
+<div class="gs-readme">
+
+<!-- OVERVIEW -->
+<div class="gs-card" style="border-color:#2563eb;margin-bottom:20px;border-width:1px 1px 1px 3px;">
+  <h3 style="color:#7dd3fc;font-size:1.05em;">What is GraphStrike?</h3>
+  <p>An <strong style="color:#e2e8f0;">OpenEnv-compatible</strong> reinforcement learning environment where an LLM agent
+  must identify all 10 members of a coordinated fake account ring hidden inside a synthetic social network.
+  The agent learns via <strong>Reflexion</strong> and a <strong>dynamic hybrid rule/LLM policy</strong> — no gradient
+  updates, no fine-tuning required.</p>
+  <p style="margin:0;">Submitted to the <strong style="color:#e2e8f0;">OpenEnv Hackathon × SCALER School of Technology</strong>.
+  Judges deploy this container, run their own LLM agent against it, and score on task quality, environment design,
+  code quality, creativity, and domain quality.</p>
+</div>
+
+<!-- KEY STATS -->
+<div class="gs-grid">
+  <div class="gs-stat"><span class="gs-stat-val">10</span><span class="gs-stat-lbl">Gang members to find per episode</span></div>
+  <div class="gs-stat"><span class="gs-stat-val">3</span><span class="gs-stat-lbl">Difficulty tiers (easy / medium / hard)</span></div>
+  <div class="gs-stat"><span class="gs-stat-val">150</span><span class="gs-stat-lbl">Pre-generated episodes (50 per task)</span></div>
+  <div class="gs-stat"><span class="gs-stat-val">24</span><span class="gs-stat-lbl">Automated validator checks</span></div>
+</div>
+
+<!-- SYSTEM ARCHITECTURE -->
+<h2>System Architecture</h2>
+<img src="/static/sys arch.png" class="gs-img" alt="System Architecture" onerror="this.style.display='none'">
+<p class="gs-img-caption">End-to-end pipeline: episode generation → environment server → hybrid agent → reflexion memory</p>
+
+<!-- DIFFICULTY -->
+<h2>Task Difficulty Tiers</h2>
+<table class="gs-table">
+  <tr><th>Task</th><th>Network Size</th><th>Gang</th><th>Decoys</th><th>Max Steps</th><th>Win Condition</th><th>Baseline Score</th></tr>
+  <tr><td><span class="gs-badge gs-badge-easy">Easy</span></td><td>50 accounts</td><td>10</td><td>0</td><td>30</td><td>Recall ≥ 0.8, Precision ≥ 0.7</td><td>0.910</td></tr>
+  <tr><td><span class="gs-badge gs-badge-medium">Medium</span></td><td>200 accounts</td><td>10</td><td>20</td><td>50</td><td>Recall ≥ 0.8, Precision ≥ 0.7</td><td>0.906</td></tr>
+  <tr><td><span class="gs-badge gs-badge-hard">Hard</span></td><td>1000 accounts</td><td>10</td><td>50</td><td>80</td><td>Recall ≥ 0.9, Precision ≥ 0.8</td><td>0.904</td></tr>
+</table>
+<p style="font-size:0.84em;color:#64748b;margin-top:-8px;">Hard mode fires 4 evasion events (steps 15, 30, 45, 60) that drop intra-gang follow edges mid-investigation, destroying graph signals.</p>
+
+<hr class="gs-divider">
+
+<!-- DETECTION SIGNALS -->
+<h2>Detection Signal Hierarchy</h2>
+<img src="/static/gs.png" class="gs-img" alt="Signal Hierarchy" onerror="this.style.display='none'">
+<p class="gs-img-caption">Node signals (offline) → Behavioral signals (temporal/device) → Graph signals (live at INSPECT) → False-positive control via hub legitimacy</p>
+
+<h3>Node Signals (pre-computed offline)</h3>
+<table class="gs-table">
+  <tr><th>Feature</th><th>Fake Range</th><th>Real Range</th><th>What it measures</th></tr>
+  <tr><td><code>photo_reuse_score</code></td><td>0.30 – 0.95</td><td>0.00 – 0.15</td><td>Stolen celebrity photos via pHash fingerprint matching</td></tr>
+  <tr><td><code>bio_template_score</code></td><td>0.20 – 0.90</td><td>0.00 – 0.12</td><td>Cosine similarity to known fake bio templates</td></tr>
+  <tr><td><code>comment_repeat_score</code></td><td>0.60 – 0.90</td><td>0.00 – 0.08</td><td>Fraction of copy-pasted spam comments across accounts</td></tr>
+</table>
+
+<h3>Behavioral Signals (temporal + device)</h3>
+<table class="gs-table">
+  <tr><th>Feature</th><th>Fake Pattern</th></tr>
+  <tr><td><code>avg_post_hour</code></td><td>All 10 gang members post within ±0.5h of each other (coordinated scheduling)</td></tr>
+  <tr><td><code>account_age_days</code></td><td>Created same week — base_age ± 7 days</td></tr>
+  <tr><td><code>shared_ip_count</code></td><td>= 9 for all gang members (one IP subnet per episode, unique seed)</td></tr>
+</table>
+
+<h3>Graph Signals (computed live at INSPECT)</h3>
+<table class="gs-table">
+  <tr><th>Feature</th><th>Fake Pattern</th></tr>
+  <tr><td><code>mutual_follow_rate</code></td><td>0.6 – 0.9 (dense intra-gang mutual follows)</td></tr>
+  <tr><td><code>flagged_neighbor_count</code></td><td>Grows as investigation proceeds — strongest late-game signal</td></tr>
+  <tr><td><code>avg_neighbor_photo_reuse</code></td><td>High when cluster shares stolen content</td></tr>
+</table>
+
+<hr class="gs-divider">
+
+<!-- EPISODE FLOW -->
+<h2>Episode Lifecycle &amp; Action Mechanics</h2>
+<img src="/static/episode.png" class="gs-img" alt="Episode Flow" onerror="this.style.display='none'">
+<p class="gs-img-caption">Episode flow: reset → inspect/flag/investigate loop → dual SUSPECT cascade → submit → grader score</p>
+
+<h3>Action Space</h3>
+<table class="gs-table">
+  <tr><th>Action</th><th>Step Cost</th><th>Effect</th></tr>
+  <tr><td><code>INSPECT acc_XXXX</code></td><td>1 step</td><td>Reveals full AccountProfile + follow list; adds 1-hop neighbors to visible set</td></tr>
+  <tr><td><code>INVESTIGATE_NETWORK acc_XXXX</code></td><td>2 steps</td><td>Bidirectional 2-hop expansion (outgoing + incoming edges); re-cascades SUSPECT</td></tr>
+  <tr><td><code>FLAG acc_XXXX</code></td><td>FREE</td><td>Marks as fake; triggers dual SUSPECT cascade (follow-graph + IP cluster)</td></tr>
+  <tr><td><code>UNFLAG acc_XXXX</code></td><td>FREE</td><td>Removes flag; clears CONFIRMED_FAKE status</td></tr>
+  <tr><td><code>SUBMIT</code></td><td>FREE</td><td>Ends episode; triggers grader scoring</td></tr>
+</table>
+
+<h3>Dual SUSPECT Cascade (triggered by FLAG)</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:10px 0;">
+  <div class="gs-card">
+    <h3 style="color:#4ade80;margin-top:0;">Cascade 1 — Follow-Graph</h3>
+    <p style="margin:0;font-size:0.88em;">Every account the flagged member <em>follows</em> (<code>_live_edges</code>) becomes SUSPECT if visible and NORMAL. Gang follow density is 0.70+ so this is high-precision.</p>
+  </div>
+  <div class="gs-card">
+    <h3 style="color:#facc15;margin-top:0;">Cascade 2 — IP Cluster</h3>
+    <p style="margin:0;font-size:0.88em;">Every visible account sharing the same <code>ip_cluster_id</code> becomes SUSPECT. Gang shares <code>ip_gang_&lt;seed&gt;</code>; real accounts have unique IPs. <strong>Zero false positives.</strong></p>
+  </div>
+</div>
+
+<hr class="gs-divider">
+
+<!-- RISK SCORING -->
+<h2>Risk Scoring Mathematics</h2>
+<img src="/img/big.png" class="gs-img" alt="Risk Scoring Overview" onerror="this.style.display='none'">
+<p class="gs-img-caption">All scoring functions are stateless and deterministic — called inside _build_profile() at every INSPECT</p>
+
+<div class="gs-img-pair">
+  <div>
+    <img src="/static/formulas-1.png" class="gs-img" alt="Risk Formulas Part 1" onerror="this.style.display='none'">
+    <p class="gs-img-caption">Node risk, Behavior risk, Graph risk components</p>
+  </div>
+  <div>
+    <img src="/static/formulas-2.png" class="gs-img" alt="Risk Formulas Part 2" onerror="this.style.display='none'">
+    <p class="gs-img-caption">Hub legitimacy, Composite fake_risk_score formula</p>
+  </div>
+</div>
+
+<div class="gs-formula">fake_risk = clip(
+  0.30 × node_risk        ← content signals (photo reuse, bio templates)
++ 0.25 × behavior_risk   ← temporal + age clustering
++ 0.45 × graph_risk      ← structural coordination (highest weight — hardest to fake)
+− 0.25 × hub_legitimacy, ← subtractive: celebrities score ≈ 0 before clip
+0.0, 1.0)</div>
+
+<h3>Grader Score Formula</h3>
+<div class="gs-formula">recall    = tp / 10
+precision = tp / max(tp + fp, 1)
+efficiency = max(0, (max_steps − steps_used) / max_steps)
+
+if recall ≥ 0.8 and precision ≥ 0.7:
+    score = 0.55 + 0.20×recall + 0.15×precision + 0.10×efficiency
+else:
+    score = 0.30×recall + 0.10×precision
+
+# Maximum possible: 1.00  |  Win threshold: ~0.815</div>
+
+<hr class="gs-divider">
+
+<!-- REFLEXION -->
+<h2>Reflexion Learning</h2>
+<img src="/static/reflexion.png" class="gs-img" alt="Reflexion Learning Loop" onerror="this.style.display='none'">
+<p class="gs-img-caption">Post-episode lessons injected into every future prompt — learning without weight updates</p>
+
+<p>The LLM (Qwen3-80B via AWS Bedrock) cannot be fine-tuned — it is a black-box API.
+Instead, a separate Qwen3 call generates a 2–3 sentence lesson after each episode.
+The best winning trajectory is stored as a few-shot example injected into all future prompts.</p>
+
+<pre><code>Episode N:
+  LLM acts using: system_prompt + reflections[last 4] + best_trajectory
+  Episode ends → WIN or LOSS
+  LOSS → generate_reflection(action_log, outcome) → lesson stored
+  WIN  → save trajectory if better reward + generate_success_reflection
+
+Episode N+1:
+  last 4 reflections + best win trajectory injected into prompt
+  → LLM has learned from its past without any weight updates</code></pre>
+
+<hr class="gs-divider">
+
+<!-- HYBRID POLICY -->
+<h2>Hybrid Policy — The Novel Contribution</h2>
+<img src="/static/hybrid.png" class="gs-img" alt="Hybrid Policy Architecture" onerror="this.style.display='none'">
+<p class="gs-img-caption">Dynamic alpha-weighted blend: rules dominate early, LLM earns trust through wins and reflections</p>
+
+<p>A <strong>dynamic α-weighted blend</strong> of a deterministic rule engine and the LLM. α represents trust in the LLM —
+starts at 0.20 (rules dominate), climbs as the LLM wins consistently and accumulates reflections, capped per task
+to prevent the LLM from overriding correct high-confidence rule decisions.</p>
+
+<div class="gs-formula">reflection_factor = min(1.0, n_reflections / 4.0)
+raw   = 0.20 + reflection_factor × (0.80 × recent_win_rate + 0.12)
+alpha = clamp(raw, 0.20, task_cap)
+
+Per-task caps:  easy → 0.50  |  medium → 0.70  |  hard → 0.85</div>
+
+<img src="/img/plot.png" class="gs-img" alt="Alpha progression over training" onerror="this.style.display='none'">
+<p class="gs-img-caption">Alpha progression: rule-dominated early training → LLM earns authority through wins</p>
+
+<h3>Rule Confidence Levels</h3>
+<table class="gs-table">
+  <tr><th>Situation</th><th>Rule Action</th><th>Confidence</th></tr>
+  <tr><td>Steps remaining = 0</td><td>SUBMIT</td><td>1.00</td></tr>
+  <tr><td>Uninspected SUSPECT accounts exist</td><td>INSPECT suspects[0]</td><td>0.95</td></tr>
+  <tr><td><code>fake_risk ≥ 0.85</code></td><td>FLAG that account</td><td>0.95</td></tr>
+  <tr><td><code>fake_risk</code> in [threshold, 0.85)</td><td>FLAG that account</td><td>0.70 – 0.94</td></tr>
+  <tr><td>10 flags placed</td><td>SUBMIT</td><td>0.85</td></tr>
+  <tr><td>Steps remaining ≤ 3</td><td>SUBMIT</td><td>0.90</td></tr>
+  <tr><td>Uninspected accounts available</td><td>INSPECT top candidate</td><td>0.30</td></tr>
+</table>
+<p style="font-size:0.85em;color:#64748b;">When <code>rule_confidence ≥ alpha</code> the rule engine overrides. At easy cap (0.50), the LLM controls only exploratory INSPECT decisions. At hard cap (0.85), the LLM controls most decisions except forced submits and suspect cascade.</p>
+
+</div>
+"""
+
     _HEADER_HTML = """
-<div style="background:linear-gradient(135deg,#0c1a2e 0%,#0f2d4a 60%,#0a1f3c 100%);
-            padding:22px 28px;border-radius:10px;border:1px solid #1e3a5f;margin-bottom:4px;">
-  <h1 style="color:#e2e8f0;margin:0 0 4px;font-size:1.75em;letter-spacing:-0.3px;">GraphStrike</h1>
-  <p style="color:#64748b;margin:0;font-size:0.95em;">
-    Coordinated Fake Account Ring Detection &mdash; OpenEnv RL Environment
-  </p>
+<style>
+.gr-dataframe th { background:#0c2340!important;color:#94a3b8!important;font-weight:700!important;font-size:12px!important;padding:10px 12px!important;border-bottom:1px solid #1e3a5f!important; }
+.gr-dataframe td { font-size:12.5px!important;padding:8px 12px!important; }
+</style>
+<div style="background:linear-gradient(135deg,#050d1a 0%,#0b1f3a 50%,#060f1e 100%);
+            padding:24px 32px 20px;border-radius:12px;
+            border:1px solid #1e3a5f;margin-bottom:2px;
+            box-shadow:0 4px 24px rgba(0,0,0,0.5);">
+  <div style="display:flex;align-items:center;gap:16px;margin-bottom:8px;">
+    <div>
+      <h1 style="color:#e2e8f0;margin:0;font-size:1.9em;font-weight:800;letter-spacing:-0.5px;
+                  font-family:'Inter',system-ui,sans-serif;">GraphStrike</h1>
+      <p style="color:#475569;margin:3px 0 0;font-size:0.88em;letter-spacing:0.3px;font-family:'IBM Plex Mono',monospace;">
+        COORDINATED FAKE ACCOUNT RING DETECTION &mdash; OPENENV RL ENVIRONMENT
+      </p>
+    </div>
+  </div>
+  <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px;">
+    <span style="background:#052e16;color:#4ade80;padding:3px 10px;border-radius:20px;font-size:0.78em;font-weight:600;border:1px solid #166534;">OpenEnv Hackathon</span>
+    <span style="background:#0c1a2e;color:#7dd3fc;padding:3px 10px;border-radius:20px;font-size:0.78em;font-weight:600;border:1px solid #1e40af;">Reinforcement Learning</span>
+    <span style="background:#1c0533;color:#c084fc;padding:3px 10px;border-radius:20px;font-size:0.78em;font-weight:600;border:1px solid #6b21a8;">Hybrid Policy</span>
+    <span style="background:#2d1f00;color:#fbbf24;padding:3px 10px;border-radius:20px;font-size:0.78em;font-weight:600;border:1px solid #92400e;">Reflexion Learning</span>
+    <span style="background:#1a0505;color:#f87171;padding:3px 10px;border-radius:20px;font-size:0.78em;font-weight:600;border:1px solid #7f1d1d;">Fraud Detection</span>
+  </div>
 </div>"""
 
     _FOOTER_HTML = """
-<div style="text-align:center;padding:28px 0 10px;color:#334155;font-size:12.5px;
-            border-top:1px solid #1e3a5f;margin-top:32px;">
-  Built by team <strong style="color:#60a5fa;letter-spacing:0.3px;">computeXor</strong>
+<div style="text-align:center;padding:24px 0 8px;color:#1e3a5f;font-size:12px;
+            border-top:1px solid #0f1e30;margin-top:28px;font-family:'IBM Plex Mono',monospace;">
+  GraphStrike &mdash; OpenEnv Hackathon &times; SCALER School of Technology &nbsp;|&nbsp;
+  <a href="/docs" style="color:#334155;text-decoration:none;">API Docs</a>
 </div>"""
 
-    with gr.Blocks(title="GraphStrike", css="""
-        .gr-tab-item { font-size: 14px; }
-        .gr-dataframe th { background: #0c2340 !important; color: #94a3b8 !important; font-weight: 600; }
-    """) as demo:
+    with gr.Blocks(title="GraphStrike") as demo:
 
         gr.HTML(_HEADER_HTML)
 
         with gr.Tabs():
 
-            # ══════════════ TAB 1: PLAYGROUND ══════════════
+            # ══════════════ TAB 1: README ══════════════
+            with gr.Tab("Overview"):
+                gr.HTML(_README_HTML)
+
+            # ══════════════ TAB 2: PLAYGROUND ══════════════
             with gr.Tab("Playground"):
                 with gr.Row():
                     with gr.Column(scale=1, min_width=220):
