@@ -511,4 +511,12 @@ curl -X POST https://pandago-graphstrike.hf.space/baseline
 
 ## Developed with ❤️ by Team ComputeXOR
 
-### { [Sai Nivedh](https://github.com/SaiNivedh26) , [Charuvarthan minus T](https://github.com/Charuvarthan-T) , [Sajeev Senthil](https://github.com/SajeevSenthil) }
+### {
+
+### [Sai Nivedh](https://github.com/SaiNivedh26) ,
+
+### [Chaaruvarthan](https://github.com/Charuvarthan-T) ,
+
+### [Sajeev](https://github.com/SajeevSenthil)
+
+### }
