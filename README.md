@@ -14,12 +14,35 @@ tags:
   - openenv
   - llm-agent
 ---
-# GraphStrike : Coordinated Fake Account Network Detection
+<br>
 
-An OpenEnv-compatible reinforcement learning environment where an LLM agent
-must identify all 10 members of a coordinated fake account network hidden
-inside a synthetic social network. The agent learns via **Reflexion** and a
-**dynamic hybrid rule/LLM policy** , not via gradient updates or fine-tuning.
+<p align="center">
+<img src="images/logo.png" width="600"/>
+</p>
+
+<br>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/Hugging%20Face-FFD21E?style=for-the-badge&logo=huggingface&logoColor=black"/>
+  <img src="https://img.shields.io/badge/HF%20Spaces-FFBF00?style=for-the-badge&logo=huggingface&logoColor=black"/>
+  <img src="https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white"/>
+  <img src="https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white"/>
+  <img src="https://img.shields.io/badge/Gradio-F97316?style=for-the-badge&logo=gradio&logoColor=white"/>
+  <img src="https://img.shields.io/badge/OpenEnv-4B5563?style=for-the-badge&logo=envato&logoColor=white"/>
+  <img src="https://img.shields.io/badge/Amazon%20Bedrock-FF9900?style=for-the-badge&logo=amazonaws&logoColor=white"/>
+</p>
+<br>
+
+<h1 align="center">
+</h1>
+  <p align="center">
+    An OpenEnv-compatible reinforcement learning environment where an LLM agent must identify all 10 members of a coordinated fake account network hidden inside a synthetic social network. The agent learns via Reflexion and a dynamic hybrid rule/LLM policy , not via gradient updates or fine-tuning.
+    <br />
+    </p>
+</p>
+
+<br>
+<br>
 
 ### *Deployed Endpoint Verification*
 
@@ -42,148 +65,45 @@ curl -X POST https://pandago-graphstrike.hf.space/baseline
 
 ---
 
-We evaluate GraphStrike's hybrid rule/LLM policy across multiple frontier models
-to measure how well each model handles the investigation task. All runs use
-the same inference pipeline (`inference.py`) with identical system prompts and
-structured logging. Each model ran: (1) seed=0 on all 3 tasks, and
-(2) seeds 0-2 on all 3 tasks for variance measurement.
+<br>
 
+We evaluate GraphStrike's hybrid rule/LLM policy across multiple *frontier models to measure how well each model handles the investigation task. All runs use
+the same inference pipeline (`inference.py`) with identical system prompts and structured logging. Each model ran: (1) seed=0 on all 3 tasks, and
+(2) seeds 0-2 on all 3 tasks for variance measurement.*
 
+<br>
 
 **Seed=0 scores (single episode per task):**
 
-| Model                   | Params   | Easy  | Medium | Hard  | Mean            |
-| ----------------------- | -------- | ----- | ------ | ----- | --------------- |
-| Mistral Ministral 3 8B  | 8B       | 0.967 | 0.964  | 0.964 | **0.965** |
-| Nvidia Nemotron Super 3 | 120B     | 0.930 | 0.941  | 0.964 | **0.945** |
-| DeepSeek V3.2           | 685B MoE | 0.967 | 0.960  | 0.933 | **0.953** |
-| Meta Llama 4 Scout      | 17B      | 0.923 | 0.904  | 0.903 | **0.910** |
-| Google Gemma 3          | 12B      | 0.900 | 0.908  | 0.908 | **0.905** |
-
-
+<p align="center">
+  <img src="images/table1.png" alt="Model Performance Table" width="1600"/>
+</p>
 <br>
 
 **3-seed variance scores (mean across seeds 0, 1, 2):**
 
-| Model                   | Easy (mean/var)         | Medium (mean/var)       | Hard (mean/var)         | Bottleneck               |
-| ----------------------- | ----------------------- | ----------------------- | ----------------------- | ------------------------ |
-| Nvidia Nemotron Super 3 | 0.957 / 0.000           | 0.957 / 0.000           | **0.645** / 0.208 | Hard/seed=1              |
-| Mistral Ministral 3 8B  | 0.958 / 0.000           | **0.645** / 0.208 | **0.623** / 0.195 | Medium+Hard/seed=2       |
-| DeepSeek V3.2           | **0.640** / 0.205 | 0.957 / 0.000           | **0.645** / 0.208 | Easy/seed=2, Hard/seed=1 |
-| Google Gemma 3          | 0.912 / 0.000           | 0.917 / 0.000           | **0.603** / 0.182 | Hard/seed=1              |
-| Meta Llama 4 Scout      | 0.916 / 0.000           | 0.903 / 0.000           | **0.602** / 0.181 | Hard/seed=1              |
+<p align="center">
+  <img src="images/table2.png" alt="Model Performance Table" width="1600"/>
+</p>
+<br>
 
-*Bold entries indicate episodes with a 0.000 score pulling down the mean.*
+ **Rule-Based Baseline (no LLM, deterministic)**
 
-
-
-**Key Findings:**
-
-1. **Hard task seed=1 is the universal failure case.** Every single model scored 0.0 on hard/seed=1. This specific episode triggers an evasion event at a critical timing window that causes all models to lose track of the investigation chain. This is an environment design property, not a model weakness — it validates that the hard task genuinely challenges frontier LLM agents.
-2. **Medium task is the most reliable discriminator.** All models achieve near-perfect scores across all 3 seeds on medium (variance < 0.001), making it the best task for comparing model capability. Scores range from 0.900–0.974 with no catastrophic failures.
-3. **Easy task exposes instruction-following gaps.** DeepSeek scored 0.0 on easy/seed=2 — it prematurely submitted with 0 flags (48 steps remaining), indicating a failure to follow the "flag before submit" strategy. All other models handled easy consistently, suggesting DeepSeek occasionally ignores structured action constraints in simpler scenarios.
-4. **All LLM models outperform the rule-based baseline** on seed=0 runs, confirming that the environment rewards intelligent investigation strategy (suspect prioritization, graph traversal) over mechanical threshold-checking.
-
-**Model-by-Model Analysis:**
-
-- **Qwen3 80B (avg 0.9648)** — Top performer. Highest seed=0 scores across all three tasks. Excellent instruction following with no easy/medium failures. The only weakness is the universal hard/seed=1 failure shared by all models.
-- **DeepSeek V3.2 (avg 0.9513)** — Strong but brittle. Matches Qwen3 on medium (0.960) and comes close on hard (0.943). However, the easy/seed=2 catastrophic failure (premature SUBMIT with 0 flags) reveals occasional instruction-following breakdowns. Also produced 1 false positive on one easy run (flagged 11/10), indicating slightly less precise action selection.
-- **NVIDIA Nemotron 120B (avg 0.9450)** — Most consistent across seeds. The only model with zero catastrophic failures on easy (all 3 seeds > 0.95). Medium variance is the lowest (0.000193). Slightly lower seed=0 easy score (0.930 vs 0.967) suggests it takes more steps to converge but does so reliably. Best hard-task seed=0 score (0.9637), tied with Qwen3.
-- **Gemma 3 12B (avg 0.9052)** — Smallest model, lowest scores, but still beats baseline. Scores cluster around 0.900–0.907 on seed=0 across all tasks, suggesting it hits the efficiency ceiling imposed by its slower investigation pace (uses more steps to find all 10 fakes). No false positives across any run — high precision, lower efficiency. The 12B parameter count limits its ability to maintain complex graph-reasoning chains.
-
-
-**What This Signifies Overall:**
-
-The environment produces a clear **capability gradient** that tracks with model scale: Qwen3-80B > DeepSeek-V3.2 > Nemotron-120B > Gemma-12B > Rule-based baseline. The 0.90–0.97 score range across all LLM models (seed=0) demonstrates that GraphStrike is **solvable but non-trivial** — models must combine structured reasoning, graph traversal, and strategic flag/submit timing. The universal hard/seed=1 failure proves the evasion mechanism works as intended, creating a genuine challenge even for the strongest frontier models.
+<p align="center">
+  <img src="images/table3.png" alt="Model Performance Table" width="1600"/>
+</p>
+<br>
 
 ---
-
----
-
-## Table of Contents
-
-1. [What This Is](#1-what-this-is)
-2. [Repository Layout](#2-repository-layout)
-3. [The Problem: How Fake Detection Actually Works](#3-the-problem-how-fake-detection-actually-works)
-4. [Synthetic Data Generation](#4-synthetic-data-generation)
-5. [Data Model — Every Field Explained](#5-data-model--every-field-explained)
-6. [The RL Environment](#6-the-rl-environment)
-7. [Risk Scoring Mathematics](#7-risk-scoring-mathematics)
-8. [Account Status State Machine](#8-account-status-state-machine)
-9. [The LLM Policy (Qwen3 via Bedrock)](#9-the-llm-policy-qwen3-via-bedrock)
-10. [Reflexion — How the Agent Learns](#10-reflexion--how-the-agent-learns)
-11. [Hybrid Policy — The Novel Contribution](#11-hybrid-policy--the-novel-contribution)
-12. [Training Loop End-to-End](#12-training-loop-end-to-end)
-13. [API Reference](#13-api-reference)
-14. [Docker Deployment](#14-docker-deployment)
-15. [Submission Requirements](#15-submission-requirements)
-16. [Verification &amp;  Validation](#17-verification--validation)
-
----
-
-## 1. What This Is
-
-This is an **OpenEnv hackathon** submission. OpenEnv is a framework for building
-reinforcement learning environments with a standard microservice interface
-(`/reset`, `/step`, `/state`) so that any agent implementation can plug in.
 
 **The task:** A social network contains fake accounts organised into a
 single coordinated network of 10. The network behaves in a coordinated way — same posting hour,
 same IP subnet, stolen celebrity photos, copy-paste bios. The agent must find
 all 10 by navigating a limited step budget, inspecting accounts, and flagging suspects.
 
-**What makes this non-trivial:**
+**What makes this non-trivial:** The network is large (50–1000 accounts depending on difficulty). Fake accounts are mixed with innocent high-signal "decoy" accounts.In hard mode, the fake accounts actively evades — dropping intra-account follows, renaming profiles — while the agent is mid-investigation.The agent cannot see the full network upfront: it must explore via INSPECT and INVESTIGATE_NETWORK actions, spending steps to reveal information.
 
-- The network is large (50–1000 accounts depending on difficulty).
-- Fake accounts are mixed with innocent high-signal "decoy" accounts.
-- In hard mode, the gang actively evades — dropping intra-gang follows,
-  renaming profiles — while the agent is mid-investigation.
-- The agent cannot see the full network upfront: it must explore via INSPECT and
-  INVESTIGATE_NETWORK actions, spending steps to reveal information.
-
-**What makes the learning novel:**
-
-- The LLM (Qwen3-80B via AWS Bedrock) cannot be fine-tuned — it is a black-box API.
-- The agent learns via **Reflexion**: post-episode lessons are written back into
-  memory and injected into every future prompt.
-- A **dynamic hybrid policy** (α-weighted) blends the LLM with a deterministic
-  rule engine, with the blend weight α updating based on recent win rate.
-  Rules dominate early; the LLM takes over as it proves itself.
-
----
-
-## 2. Repository Layout
-
-```
-fake_gang_env/
-│
-├── models.py                  # All Pydantic types: Action, Observation, State, Profile
-├── bedrock_model.py           # AWS Bedrock client — invoke_qwen()
-├── client.py                  # HTTP client for talking to the running server
-├── inference.py               # Submission: rule-based baseline runner + HTTP client mode
-├── validate.py                # Submission: pre-submission validator (24 checks)
-├── train.py                   # Main training loop (curriculum + hybrid policy)
-├── run.sh                     # Docker entrypoint: episodes → server → training
-├── requirements.txt           # Python dependencies
-│
-├── server/
-│   ├── app.py                 # FastAPI server: /reset /step /state /health /tasks /grader /baseline
-│   ├── environment.py         # Core RL environment — FakeGangEnvironment class
-│   ├── generator.py           # Synthetic episode generator (50 per task × 3 tasks = 150 files)
-│   ├── scoring.py             # Pure-math risk formula engine (stateless functions)
-│   ├── Dockerfile             # Offline pip install via pre-downloaded wheels
-│   └── .dockerignore          # Excludes episodes/, memory/, runs/ from build context
-│
-├── agent/
-│   ├── policy.py              # LLM policy: formats obs → calls Qwen → parses <action> tag
-│   ├── hybrid_policy.py       # Hybrid policy: blends rules + LLM via dynamic α
-│   ├── memory.py              # Disk-backed memory: reflections, trajectories, win history, α
-│   └── reflection.py          # Post-episode reflection generator (also calls Qwen)
-│
-├── episodes/                  # 150 pre-generated JSON episode files (excluded from Docker build)
-├── memory/                    # Docker volume: reflections, trajectories, α values (persists)
-└── runs/                      # Docker volume: per-episode metrics JSONL (persists)
-```
+**What makes the learning novel:** The LInference LLM (via aws bedrock) cannot be fine-tuned.it's a black-box API. The agent learns via Reflexion i.e., post-episode lessons are written back into memory and injected into every future prompt. A dynamic hybrid policy (α-weighted) blends the LLM with a deterministic rule engine, with the blend weight α updating based on recent win rate. Rules dominate early; the LLM takes over as it proves itself.
 
 ---
 
@@ -1459,7 +1379,6 @@ difficulty scaling is designed so that easy is consistently solvable, medium
 requires some luck, and hard genuinely challenges frontier LLM agents via
 evasion events that destroy graph signals mid-investigation.
 
-
 ---
 
 ## 14. Docker Deployment
@@ -1621,8 +1540,6 @@ Checks include:
 - /baseline returns 3 valid scores
 
 **All 24/24 checks pass.**
-
-                   |
 
 ---
 
