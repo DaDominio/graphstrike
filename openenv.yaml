@@ -24,8 +24,6 @@ environment_variables:
   PORT: "7860"
   HOST: "0.0.0.0"
   WORKERS: "1"
-  AWS_DEFAULT_REGION: "us-east-1"
-  # AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY are only needed for training.
   # The environment server and /baseline endpoint work without them.
 
 # ── Task definitions ──────────────────────────────────────────────────────────
