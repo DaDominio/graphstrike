@@ -10,7 +10,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from fastapi import FastAPI, HTTPException
+from fastapi import Body, FastAPI, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -62,7 +62,9 @@ def health():
     return {"status": "healthy"}
 
 @app.post("/reset", response_model=StepResponse)
-def reset(req: ResetRequest):
+def reset(req: Optional[ResetRequest] = Body(default=None)):
+    if req is None:
+        req = ResetRequest()
     obs = _env.reset(task=req.task, seed=req.seed, episode_id=req.episode_id)
     return StepResponse(observation=obs.model_dump(), done=obs.done, reward=obs.reward, message=obs.message)
 
@@ -126,7 +128,7 @@ def mcp(body: Dict[str, Any] = {}):
         ]}}
     return {"jsonrpc": "2.0", "id": req_id, "result": {"name": "graphstrike", "version": "1.0.0", "protocolVersion": "2024-11-05"}}
 
-@app.post("/baseline")
+@app.api_route("/baseline", methods=["GET", "POST"])
 def baseline():
     sys.path.insert(0, str(Path(__file__).parent.parent))
     from inference import run_rule_based_episode
