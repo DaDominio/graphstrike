@@ -1,30 +1,34 @@
 """
-GraphStrike — OpenEnv Inference Script
-=======================================
+GraphStrike — Custom Inference Script (AWS Bedrock backend)
+===========================================================
+
+Same as inference.py but uses AWS Bedrock instead of HF router.
 
 MANDATORY ENVIRONMENT VARIABLES:
-    API_BASE_URL   The API endpoint for the LLM (default: HF router)
-    MODEL_NAME     The model identifier for inference
-    HF_TOKEN       Your Hugging Face / API key
-    LOCAL_IMAGE_NAME  Docker image name (optional, for from_docker_image mode)
+    AWS_ACCESS_KEY_ID      AWS credentials
+    AWS_SECRET_ACCESS_KEY  AWS credentials
+    AWS_DEFAULT_REGION     AWS region (default: us-east-1)
+    BEDROCK_MODEL_ID       Bedrock model ID (default: qwen.qwen3-next-80b-a3b)
+
+OPTIONAL:
+    ENV_URL    Environment server URL (default: https://pandago-graphstrike.hf.space)
+    TASK_NAME  "easy" | "medium" | "hard" | "all"  (default: "all")
+    SEED       Integer seed (default: 0)
 
 STDOUT FORMAT:
     [START] task=<task_name> env=graphstrike model=<model_name>
     [STEP]  step=<n> action=<action_str> reward=<0.00> done=<true|false> error=<msg|null>
     [END]   success=<true|false> steps=<n> score=<0.000> rewards=<r1,r2,...,rn>
-
-TWO MODES:
-    1. LLM inference (default):  Uses OpenAI client to call an LLM that decides actions
-    2. Library mode:             run_rule_based_episode(env, task, seed) -> float
-       (used internally by /baseline endpoint — no LLM, deterministic)
 """
 
 from __future__ import annotations
 
 import json
 import os
+import re
 import sys
 import textwrap
+import time
 import urllib.request
 from pathlib import Path
 from typing import Dict, List, Optional
@@ -40,30 +44,26 @@ from models import ActionType, FakeGangAction, FakeGangObservation
 # Environment variables
 # ---------------------------------------------------------------------------
 
-API_BASE_URL = os.getenv("API_BASE_URL", "https://router.huggingface.co/v1")
-MODEL_NAME = os.getenv("MODEL_NAME", "Qwen/Qwen2.5-72B-Instruct:novita")
-HF_TOKEN = os.getenv("HF_TOKEN")
-LOCAL_IMAGE_NAME = os.getenv("LOCAL_IMAGE_NAME")  # optional — from_docker_image mode
+BEDROCK_MODEL_ID = os.getenv("BEDROCK_MODEL_ID", "qwen.qwen3-next-80b-a3b")
+AWS_REGION       = os.getenv("AWS_DEFAULT_REGION", "us-east-1")
+AWS_ACCESS_KEY   = os.getenv("AWS_ACCESS_KEY_ID")
+AWS_SECRET_KEY   = os.getenv("AWS_SECRET_ACCESS_KEY")
 
-# Resolved API key: HF_TOKEN is primary, API_KEY is fallback
-API_KEY = HF_TOKEN or os.getenv("API_KEY")
-
-BENCHMARK = "graphstrike"
-MAX_STEPS_OVERRIDE = None  # Use environment's max_steps
-TEMPERATURE = 0.4
-MAX_TOKENS = 512
+BENCHMARK    = "graphstrike"
+TEMPERATURE  = 0.3
+MAX_TOKENS   = 256
 
 # ---------------------------------------------------------------------------
 # Thresholds (for rule-based baseline)
 # ---------------------------------------------------------------------------
 
 THRESHOLDS: Dict[str, float] = {
-    "easy": 0.60,
+    "easy":   0.60,
     "medium": 0.50,
-    "hard": 0.45,
+    "hard":   0.45,
 }
 
-_BOOTSTRAP_RAW_THRESHOLD = 0.40
+_BOOTSTRAP_RAW_THRESHOLD  = 0.40
 _SHARED_IP_GANG_THRESHOLD = 5
 
 # ---------------------------------------------------------------------------
@@ -76,7 +76,7 @@ def log_start(task: str, env: str, model: str) -> None:
 
 def log_step(step: int, action: str, reward: float, done: bool, error: Optional[str]) -> None:
     error_val = error if error else "null"
-    done_val = str(done).lower()
+    done_val  = str(done).lower()
     print(
         f"[STEP] step={step} action={action} reward={reward:.2f} done={done_val} error={error_val}",
         flush=True,
@@ -92,7 +92,7 @@ def log_end(success: bool, steps: int, score: float, rewards: List[float]) -> No
 
 
 # ---------------------------------------------------------------------------
-# LLM decision-making via OpenAI client
+# System prompt (shared with inference.py)
 # ---------------------------------------------------------------------------
 
 SYSTEM_PROMPT = textwrap.dedent("""
@@ -125,11 +125,80 @@ SYSTEM_PROMPT = textwrap.dedent("""
 """).strip()
 
 
+# ---------------------------------------------------------------------------
+# AWS Bedrock LLM call
+# ---------------------------------------------------------------------------
+
+def _call_bedrock(prompt: str) -> str:
+    """Call LLM via AWS Bedrock. Tries converse() first, falls back to invoke_model()."""
+    import boto3
+    client = boto3.client(
+        service_name="bedrock-runtime",
+        region_name=AWS_REGION,
+        aws_access_key_id=AWS_ACCESS_KEY,
+        aws_secret_access_key=AWS_SECRET_KEY,
+    )
+    # converse API (boto3 >= 1.34.x) — preferred
+    if hasattr(client, "converse"):
+        resp = client.converse(
+            modelId=BEDROCK_MODEL_ID,
+            messages=[{"role": "user", "content": [{"text": prompt}]}],
+            system=[{"text": SYSTEM_PROMPT}],
+            inferenceConfig={"maxTokens": MAX_TOKENS, "temperature": TEMPERATURE},
+        )
+        return resp["output"]["message"]["content"][0]["text"].strip()
+
+    # Fallback: invoke_model (works with all boto3 versions)
+    body = json.dumps({
+        "messages": [
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "user",   "content": prompt},
+        ],
+        "max_tokens":  MAX_TOKENS,
+        "temperature": TEMPERATURE,
+    })
+    resp = client.invoke_model(
+        modelId=BEDROCK_MODEL_ID,
+        contentType="application/json",
+        accept="application/json",
+        body=body,
+    )
+    result = json.loads(resp["body"].read())
+    if "choices" in result:
+        return result["choices"][0]["message"]["content"].strip()
+    if "content" in result:
+        content = result["content"]
+        if isinstance(content, list):
+            return content[0].get("text", "").strip()
+        return str(content).strip()
+    if "output" in result:
+        return result["output"].get("text", "").strip()
+    return str(result).strip()
+
+
+def _call_llm_with_retry(prompt: str) -> str:
+    """Call Bedrock with up to 3 retries, strip Qwen3 <think> blocks."""
+    for attempt in range(3):
+        try:
+            raw = _call_bedrock(prompt)
+            cleaned = re.sub(r"<think>.*?</think>", "", raw, flags=re.DOTALL).strip()
+            return cleaned if cleaned else raw
+        except Exception:
+            if attempt == 2:
+                return ""
+            wait = 3 * (attempt + 1)
+            time.sleep(wait)
+    return ""
+
+
+# ---------------------------------------------------------------------------
+# Observation formatter
+# ---------------------------------------------------------------------------
+
 def _format_obs_for_llm(obs_data: dict) -> str:
-    """Format observation as text prompt for the LLM — shows raw signals prominently."""
     lines = []
     lines.append(f"TASK: {obs_data.get('task', '?').upper()} | Steps remaining: {obs_data.get('steps_remaining', '?')}")
-    flagged = obs_data.get("flagged_ids", [])
+    flagged  = obs_data.get("flagged_ids", [])
     lines.append(f"Flagged ({len(flagged)}/10): {', '.join(flagged) if flagged else 'none'}")
 
     suspects = obs_data.get("suspect_ids", [])
@@ -140,9 +209,7 @@ def _format_obs_for_llm(obs_data: dict) -> str:
 
     accounts = obs_data.get("visible_accounts", [])
     if accounts:
-        unflagged_suspicious = []
-        flagged_accs = []
-        clean_accs = []
+        unflagged_suspicious, flagged_accs, clean_accs = [], [], []
         for a in sorted(accounts, key=lambda x: x.get("fake_risk_score", 0), reverse=True):
             aid = a.get("account_id", "?")
             if aid in flagged:
@@ -157,7 +224,11 @@ def _format_obs_for_llm(obs_data: dict) -> str:
             lines.append(f"\n!!! ACTION NEEDED — FLAG THESE ({len(unflagged_suspicious)} suspicious):")
             for a in unflagged_suspicious:
                 aid = a.get("account_id", "?")
-                lines.append(f"  → FLAG {aid}: risk={a.get('fake_risk_score',0):.3f} photo={a.get('photo_reuse_score',0):.2f} bio={a.get('bio_template_score',0):.2f} ip_shared={a.get('shared_ip_count',0)} hub={a.get('hub_legitimacy_score',0):.2f}")
+                lines.append(
+                    f"  → FLAG {aid}: risk={a.get('fake_risk_score',0):.3f} "
+                    f"photo={a.get('photo_reuse_score',0):.2f} bio={a.get('bio_template_score',0):.2f} "
+                    f"ip_shared={a.get('shared_ip_count',0)} hub={a.get('hub_legitimacy_score',0):.2f}"
+                )
 
         if flagged_accs:
             lines.append(f"\nALREADY FLAGGED ({len(flagged_accs)}):")
@@ -170,12 +241,19 @@ def _format_obs_for_llm(obs_data: dict) -> str:
                 aid = a.get("account_id", "?")
                 hub = a.get("hub_legitimacy_score", 0)
                 hub_mark = " [CELEBRITY]" if hub > 0.70 else ""
-                lines.append(f"  {aid}: risk={a.get('fake_risk_score',0):.3f} photo={a.get('photo_reuse_score',0):.2f} bio={a.get('bio_template_score',0):.2f} hub={hub:.2f}{hub_mark}")
+                lines.append(
+                    f"  {aid}: risk={a.get('fake_risk_score',0):.3f} "
+                    f"photo={a.get('photo_reuse_score',0):.2f} bio={a.get('bio_template_score',0):.2f} "
+                    f"hub={hub:.2f}{hub_mark}"
+                )
 
-    visible_ids = obs_data.get("visible_account_ids", [])
+    visible_ids   = obs_data.get("visible_account_ids", [])
     uninspected_ids = [i for i in visible_ids if i not in inspected]
     if uninspected_ids:
-        lines.append(f"\nUninspected IDs ({len(uninspected_ids)}): {', '.join(uninspected_ids[:10])}{'...' if len(uninspected_ids) > 10 else ''}")
+        lines.append(
+            f"\nUninspected IDs ({len(uninspected_ids)}): "
+            f"{', '.join(uninspected_ids[:10])}{'...' if len(uninspected_ids) > 10 else ''}"
+        )
 
     lines.append(f"\nMessage: {obs_data.get('message', '')}")
     return "\n".join(lines)
@@ -185,16 +263,18 @@ def _parse_llm_action(text: str, obs_data: dict) -> str:
     """Parse LLM response into an action string like 'INSPECT acc_0042'."""
     text = text.strip()
     for line in text.split("\n"):
-        line = line.strip()
+        line  = line.strip()
         parts = line.split(maxsplit=1)
+        if not parts:
+            continue
         verb = parts[0].upper()
-        acc = parts[1].lower() if len(parts) > 1 else None
+        acc  = parts[1].lower() if len(parts) > 1 else None
         if verb in ("INSPECT", "FLAG", "UNFLAG", "INVESTIGATE_NETWORK"):
             return f"{verb} {acc}" if acc else verb
         if verb == "SUBMIT":
             return "SUBMIT"
     # Fallback: inspect first uninspected suspect or visible account
-    suspects = obs_data.get("suspect_ids", [])
+    suspects  = obs_data.get("suspect_ids", [])
     inspected = obs_data.get("inspected_ids", [])
     for s in suspects:
         if s not in inspected:
@@ -207,10 +287,9 @@ def _parse_llm_action(text: str, obs_data: dict) -> str:
 
 
 def _action_str_to_dict(action_str: str) -> dict:
-    """Convert 'INSPECT acc_0042' to {action_type: 'inspect', account_id: 'acc_0042'}."""
-    parts = action_str.strip().split(maxsplit=1)
+    parts       = action_str.strip().split(maxsplit=1)
     action_type = parts[0].lower()
-    account_id = parts[1] if len(parts) > 1 else None
+    account_id  = parts[1] if len(parts) > 1 else None
     d = {"action_type": action_type}
     if account_id:
         d["account_id"] = account_id.lower()
@@ -218,46 +297,33 @@ def _action_str_to_dict(action_str: str) -> dict:
 
 
 def _rule_prefilter(obs_data: dict) -> Optional[str]:
-    """Return an obvious rule-based action string without calling the LLM.
-
-    Only fires when the correct action is completely unambiguous — this avoids
-    wasting LLM calls (and wall-clock time) on decisions that don't need reasoning.
-    Returns None when the LLM should decide.
-    """
-    flagged = set(obs_data.get("flagged_ids", []))
+    """Return an obvious rule-based action string without calling the LLM."""
+    flagged   = set(obs_data.get("flagged_ids", []))
     inspected = set(obs_data.get("inspected_ids", []))
     steps_remaining = obs_data.get("steps_remaining", 999)
 
-    # Forced submit when out of steps
     if steps_remaining <= 0:
         return "SUBMIT"
-
-    # Forced submit when all 10 slots filled
     if len(flagged) >= 10:
         return "SUBMIT"
 
-    # Uninspected suspects are always highest priority (cascade just fired)
     suspects = obs_data.get("suspect_ids", [])
     for s in suspects:
         if s not in inspected and s not in flagged:
             return f"INSPECT {s}"
 
-    # Any already-inspected account with unambiguous gang signals → FLAG immediately
     accounts = obs_data.get("visible_accounts", [])
     for a in sorted(accounts, key=lambda x: x.get("fake_risk_score", 0), reverse=True):
         aid = a.get("account_id", "")
         if aid in flagged:
             continue
         if a.get("hub_legitimacy_score", 0) > 0.75:
-            continue  # protect celebrities
-        # Shared IP is the strongest signal: all gang members share ip_gang_{seed}
+            continue
         if a.get("shared_ip_count", 0) >= 5:
             return f"FLAG {aid}"
-        # Both content signals very high → clear fake, flag without LLM
         if a.get("photo_reuse_score", 0) >= 0.65 and a.get("bio_template_score", 0) >= 0.55:
             return f"FLAG {aid}"
 
-    # No obvious action — let the LLM decide (exploration, borderline flags, etc.)
     return None
 
 
@@ -266,30 +332,23 @@ def _rule_prefilter(obs_data: dict) -> Optional[str]:
 # ---------------------------------------------------------------------------
 
 def run_rule_based_episode(env, task: str, seed: int = 0) -> float:
-    """Run one complete episode using the rule-based policy.
-
-    Returns the grader_score in [0.0, 1.0].
-    Called directly by the /baseline endpoint (no HTTP overhead).
-    """
+    """Run one complete episode using the rule-based policy. Returns grader_score."""
     obs: FakeGangObservation = env.reset(task=task, seed=seed)
     threshold = THRESHOLDS[task]
 
     while not obs.done:
-        # Priority 1: Inspect SUSPECT accounts (auto-elevated by FLAG cascade)
         uninspected_suspects = [s for s in obs.suspect_ids if s not in obs.inspected_ids]
         if uninspected_suspects:
             obs = env.step(FakeGangAction(action_type=ActionType.INSPECT,
                                           account_id=uninspected_suspects[0]))
             continue
 
-        # Priority 2: Flag any inspected account exceeding thresholds
         flagged_this_turn = False
         for p in sorted(obs.visible_accounts, key=lambda x: x.fake_risk_score, reverse=True):
             if p.account_id in obs.flagged_ids:
                 continue
             if p.hub_legitimacy_score > 0.75:
                 continue
-
             bootstrap_raw = (
                 0.30 * p.photo_reuse_score
                 + 0.20 * p.bio_template_score
@@ -309,7 +368,6 @@ def run_rule_based_episode(env, task: str, seed: int = 0) -> float:
         if flagged_this_turn:
             continue
 
-        # Priority 3: Inspect the highest-risk uninspected account
         uninspected = [i for i in obs.visible_account_ids if i not in obs.inspected_ids]
         if uninspected and obs.steps_remaining > 3:
             obs = env.step(FakeGangAction(action_type=ActionType.INSPECT,
@@ -331,7 +389,7 @@ def run_rule_based_episode(env, task: str, seed: int = 0) -> float:
 
 def _http_post(url: str, body: Optional[dict] = None) -> dict:
     data = json.dumps(body or {}).encode()
-    req = urllib.request.Request(
+    req  = urllib.request.Request(
         url, data=data, headers={"Content-Type": "application/json"}, method="POST"
     )
     with urllib.request.urlopen(req, timeout=60) as resp:
@@ -345,80 +403,48 @@ def _http_get(url: str) -> dict:
 
 
 # ---------------------------------------------------------------------------
-# LLM inference loop (main entrypoint)
+# Bedrock inference loop
 # ---------------------------------------------------------------------------
 
 def run_llm_episode(base_url: str, task: str, seed: int = 0) -> float:
-    """Run one episode using an LLM agent via OpenAI client.
-
-    Architecture:
-    - Rule pre-filter handles unambiguous decisions (suspects, shared-IP flags, forced submit)
-      WITHOUT calling the LLM. This saves ~50% of LLM calls and keeps runtime well
-      under the 20-minute budget on 2 vCPU / 8 GB RAM.
-    - The LLM (OpenAI client → HF router) decides only when genuine reasoning is needed:
-      exploration choices, borderline risk accounts, evasion adaptation.
-    - Loop terminates on `done=True` from env, not a fixed iteration counter.
-      FLAG actions cost 0 steps, so the loop can take more actions than max_steps.
-    """
-    from openai import OpenAI
-
-    client = OpenAI(base_url=API_BASE_URL, api_key=API_KEY)
-
+    """Run one episode using an LLM agent via AWS Bedrock."""
     rewards: List[float] = []
-    action_count = 0  # total actions taken (including free FLAGs)
-    llm_calls = 0
+    action_count = 0
+    llm_calls    = 0
 
-    log_start(task=task, env=BENCHMARK, model=MODEL_NAME)
+    log_start(task=task, env=BENCHMARK, model=BEDROCK_MODEL_ID)
 
-    score = 0.0
+    score   = 0.0
     success = False
 
     try:
         reset_resp = _http_post(f"{base_url}/reset", {"task": task, "seed": seed})
-        obs_data = reset_resp.get("observation", reset_resp)
-        done = reset_resp.get("done", False)
+        obs_data   = reset_resp.get("observation", reset_resp)
+        done       = reset_resp.get("done", False)
 
-        # Safety cap: max actions = 4 × max_steps to handle free FLAG chains
         task_max_steps = {"easy": 30, "medium": 50, "hard": 80}
-        max_actions = task_max_steps.get(task, 80) * 4
+        max_actions    = task_max_steps.get(task, 80) * 4
 
         while not done and action_count < max_actions:
             action_count += 1
 
-            # --- Rule pre-filter: skip LLM for unambiguous decisions ---
+            # Rule pre-filter: skip LLM for unambiguous decisions
             action_str = _rule_prefilter(obs_data)
 
             if action_str is None:
-                # LLM decides
-                obs_text = _format_obs_for_llm(obs_data)
-                try:
-                    completion = client.chat.completions.create(
-                        model=MODEL_NAME,
-                        messages=[
-                            {"role": "system", "content": SYSTEM_PROMPT},
-                            {"role": "user", "content": obs_text},
-                        ],
-                        temperature=TEMPERATURE,
-                        max_tokens=MAX_TOKENS,
-                        stream=False,
-                    )
-                    llm_text = (completion.choices[0].message.content or "").strip()
-                    llm_calls += 1
-                except Exception as exc:
-                    # print(f"[DEBUG] LLM call failed: {exc}", flush=True)
-                    llm_text = ""
-
+                obs_text   = _format_obs_for_llm(obs_data)
+                llm_text   = _call_llm_with_retry(obs_text)
+                llm_calls += 1
                 action_str = _parse_llm_action(llm_text, obs_data)
 
             action_dict = _action_str_to_dict(action_str)
 
             step_resp = _http_post(f"{base_url}/step", action_dict)
-            obs_data = step_resp.get("observation", step_resp)
-            reward = step_resp.get("reward") or 0.0
-            done = step_resp.get("done", False)
+            obs_data  = step_resp.get("observation", step_resp)
+            reward    = step_resp.get("reward") or 0.0
+            done      = step_resp.get("done", False)
 
             rewards.append(reward)
-
             log_step(step=action_count, action=action_str, reward=reward, done=done, error=None)
 
             if done:
@@ -427,8 +453,8 @@ def run_llm_episode(base_url: str, task: str, seed: int = 0) -> float:
         # print(f"[DEBUG] LLM calls: {llm_calls}/{action_count} actions", flush=True)
 
         grader_resp = _http_get(f"{base_url}/grader")
-        score = grader_resp.get("score", 0.0)
-        success = score >= 0.815  # win threshold (recall≥0.8, precision≥0.7)
+        score       = grader_resp.get("score", 0.0)
+        success     = score >= 0.815
 
     except Exception:
         pass
@@ -440,38 +466,39 @@ def run_llm_episode(base_url: str, task: str, seed: int = 0) -> float:
 # ---------------------------------------------------------------------------
 # CLI entry point
 # ---------------------------------------------------------------------------
-# Environment variables (used by judge / automated evaluators):
-#   ENV_URL    — base URL of the running environment server
-#   TASK_NAME  — "easy" | "medium" | "hard" | "all"  (default: "all")
-#   SEED       — integer seed (default: 0)
+# Judge interface — only AWS_ACCESS_KEY_ID + AWS_SECRET_ACCESS_KEY required.
+# Everything else has sensible defaults.
 #
-# CLI flags are optional overrides for local development:
-#   --url, --task, --seed, --baseline, --local, --all-tasks
+# Environment variables:
+#   ENV_URL    — environment server URL  (default: https://pandago-graphstrike.hf.space)
+#   TASK_NAME  — "easy" | "medium" | "hard" | "all"  (default: "all")
+#   SEED       — integer seed  (default: 0)
+#
+# CLI flags override env vars (for local dev/testing only):
+#   --url, --task, --seed, --baseline, --local
 
 if __name__ == "__main__":
     import argparse
 
-    # ── Defaults from env vars (judge interface) ─────────────────────────────
-    _default_url  = os.getenv("ENV_URL", "https://pandago-graphstrike.hf.space")
+    _default_url  = os.getenv("ENV_URL",   "http://localhost:7862")
     _default_task = os.getenv("TASK_NAME", "all")
-    _default_seed = int(os.getenv("SEED", "0"))
+    _default_seed = int(os.getenv("SEED",  "0"))
 
-    parser = argparse.ArgumentParser(description="GraphStrike inference script")
+    parser = argparse.ArgumentParser(description="GraphStrike custom inference (AWS Bedrock)")
     parser.add_argument("--url",  default=_default_url,
-                        help="Base URL of the running environment server (env: ENV_URL)")
+                        help="Environment server URL (env: ENV_URL)")
     parser.add_argument("--task", default=_default_task,
                         choices=["easy", "medium", "hard", "all"],
                         help="Task difficulty or 'all' (env: TASK_NAME)")
     parser.add_argument("--seed", type=int, default=_default_seed,
                         help="Episode seed (env: SEED)")
-    parser.add_argument("--local", action="store_true",
+    parser.add_argument("--local",    action="store_true",
                         help="Rule-based baseline locally (no server, no LLM)")
     parser.add_argument("--baseline", action="store_true",
                         help="Run rule-based baseline via /baseline endpoint")
     args = parser.parse_args()
 
     if args.local:
-        # Direct library mode — no server, no LLM
         from environment import FakeGangEnvironment  # type: ignore[import]
         env = FakeGangEnvironment()
         scores: Dict[str, float] = {}
@@ -480,18 +507,15 @@ if __name__ == "__main__":
         print(json.dumps({"scores": scores, "agent": "rule_based"}, indent=2))
 
     elif args.baseline:
-        # Call /baseline endpoint
         result = _http_post(f"{args.url}/baseline")
         print(json.dumps(result, indent=2))
 
     elif args.task == "all":
-        # LLM inference on all 3 tasks (default when run bare: python3 inference.py)
         scores = {}
         for t in ["easy", "medium", "hard"]:
             scores[t] = run_llm_episode(args.url, task=t, seed=args.seed)
-        print(json.dumps({"scores": scores, "agent": MODEL_NAME}, indent=2))
+        print(json.dumps({"scores": scores, "agent": BEDROCK_MODEL_ID}, indent=2))
 
     else:
-        # Single-task LLM inference
         score = run_llm_episode(args.url, task=args.task, seed=args.seed)
-        print(json.dumps({"score": score, "task": args.task, "agent": MODEL_NAME}, indent=2))
+        print(json.dumps({"score": score, "task": args.task, "agent": BEDROCK_MODEL_ID}, indent=2))
