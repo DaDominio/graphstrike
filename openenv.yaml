@@ -1,10 +1,11 @@
 name: graphstrike
 version: "1.0.0"
 description: >
-  RL environment for detecting coordinated fake Instagram account gangs.
+  RL environment for detecting coordinated fake social account gangs.
   An AI detective agent must identify all 10 members of a coordinated fake
-  account gang before they evade detection. Three difficulty levels with
-  increasing network size, decoys, and real-time evasion events.
+  account gang before they evade detection. Round 2 adds platform-adaptive
+  policy compilation (Instagram/Snapchat) with tool-based hidden-signal reveal.
+  Three difficulty levels with increasing network size, decoys, and evasion events.
 author: OpenENV Hackathon
 tags:
   - social-network
@@ -50,10 +51,19 @@ tasks:
 action_schema:
   action_type:
     type: string
-    enum: [inspect, investigate_network, flag, unflag, submit]
+    enum:
+      - inspect                # reveal full profile + edges (1 step)
+      - investigate_network    # expand graph one hop (2 steps)
+      - flag                   # mark account as fake (0 steps)
+      - unflag                 # unmark account (0 steps)
+      - submit                 # end episode, trigger scoring
+      - get_policy             # Round 2: get platform policy (0 steps)
+      - reverse_image_search   # Round 2: reveal photo_reuse_score (1 step)
+      - analyze_bio            # Round 2: reveal bio_template_score (1 step)
+      - check_ip               # Round 2: reveal ip_cluster_signal (2 steps)
   account_id:
     type: string
-    description: "Required for all actions except submit"
+    description: "Required for all actions except submit and get_policy"
 
 # ── Score range ───────────────────────────────────────────────────────────────
 score_range: [0.0, 1.0]

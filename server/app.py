@@ -87,9 +87,13 @@ def list_tasks():
             "hard": "1000 accounts, 10 fakes + 50 decoys, recurring evasion, 80 steps",
         },
         "action_schema": {
-            "action_type": ["inspect", "investigate_network", "flag", "unflag", "submit"],
-            "account_id": "string (required for all actions except submit)",
+            "action_type": [
+                "inspect", "investigate_network", "flag", "unflag", "submit",
+                "get_policy", "reverse_image_search", "analyze_bio", "check_ip",
+            ],
+            "account_id": "string (required for all actions except submit and get_policy)",
         },
+        "platforms": ["Instagram", "Snapchat"],
         "score_range": [0.0, 1.0],
     }
 
@@ -98,6 +102,13 @@ def grader():
     if not _env._done:
         raise HTTPException(status_code=400, detail="Episode not complete. Call SUBMIT first.")
     return {"score": _env._last_grader_score, "task": _env._task, "episode_id": _env._episode_id}
+
+@app.get("/decision")
+def decision():
+    """Round 2: moderation decision package built at SUBMIT."""
+    if not _env._done:
+        raise HTTPException(status_code=400, detail="Episode not complete. Call SUBMIT first.")
+    return _env._decision_package
 
 @app.get("/metadata")
 def metadata():
@@ -381,7 +392,7 @@ try:
 
     def gr_step(action_type, account_id):
         try:
-            acc    = account_id.strip() if action_type != "submit" else None
+            acc    = account_id.strip() if action_type not in ("submit", "get_policy") else None
             action = FakeGangAction(action_type=ActionType(action_type), account_id=acc)
             obs    = _env.step(action)
             d      = obs.model_dump()
@@ -690,7 +701,8 @@ Per-task caps:  easy → 0.50  |  medium → 0.70  |  hard → 0.85</div>
                     with gr.Column(scale=1, min_width=220):
                         gr.Markdown("**2 — Action**")
                         action_dd = gr.Dropdown(
-                            ["inspect","investigate_network","flag","unflag","submit"],
+                            ["inspect","investigate_network","flag","unflag","submit",
+                             "get_policy","reverse_image_search","analyze_bio","check_ip"],
                             value="inspect", label="Action")
                         acc_in   = gr.Textbox(label="Account ID", placeholder="acc_0012")
                         step_btn = gr.Button("Step", variant="primary")

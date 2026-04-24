@@ -33,6 +33,11 @@ class ActionType(str, Enum):
     FLAG = "flag"                             # mark account fake (free)
     UNFLAG = "unflag"                         # unmark account (free)
     SUBMIT = "submit"                         # end episode, trigger scoring
+    # Round 2: New tool-call actions
+    REVERSE_IMAGE_SEARCH = "reverse_image_search"  # reveal photo_reuse_score, costs 1 step
+    ANALYZE_BIO = "analyze_bio"               # reveal bio_template_score, costs 1 step
+    CHECK_IP = "check_ip"                     # reveal ip_cluster_signal, costs 2 steps
+    GET_POLICY = "get_policy"                 # get platform policy, costs 0 steps
 
 
 class AccountStatus(str, Enum):
@@ -99,6 +104,7 @@ class FakeGangObservation(Observation):
     task: str = "easy"
     message: str = ""
     suspect_ids: List[str] = []  # auto-elevated neighbors of flagged accounts
+    platform: str = ""  # Round 2: Platform name (Instagram/Snapchat) - passed from state
 
 
 class FakeGangState(State):
@@ -108,3 +114,24 @@ class FakeGangState(State):
     network_size: int = 0
     gang_size: int = 10
     episode_seed: int = 0
+    platform: str = ""  # Round 2: Platform name (Instagram/Snapchat)
+
+
+# ---------------------------------------------------------------------------
+# Round 2: Platform Policy Model
+# ---------------------------------------------------------------------------
+
+class PlatformPolicy(BaseModel):
+    """Dynamically compiled platform policy from transparency reports."""
+    platform: str                    # "Instagram" or "Snapchat"
+    threshold: float                 # θ* - computed Bayesian threshold for flagging
+    base_rate: float                 # π - prevalence of fake accounts
+    fn_cost_signal: str              # "low" | "medium" | "high" | "critical"
+    fp_cost_signal: str              # "low" | "medium" | "high"
+    harm_weight: float               # enforcement vs creator balance (0.5-2.0)
+    primary_enforcement_signal: str  # "photo_reuse" | "bio_template" | "ip_cluster"
+    fp_penalty_weight: float         # C_fp for reward function
+    sources: List[str] = []          # URLs used for extraction
+    confidence: float = 0.0          # LLM extraction confidence (0.0-1.0)
+    compiled_at: str = ""            # ISO timestamp
+    used_fallback: bool = False      # True if fallback policy was used due to extraction failure

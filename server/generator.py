@@ -90,6 +90,7 @@ def _beta(rng: random.Random, a: float, b: float) -> float:
 # ---------------------------------------------------------------------------
 
 def _gen_real_account(rng: random.Random, acc_id: str) -> Dict[str, Any]:
+    # Round 2: photo_reuse, bio_template, ip_cluster moved to hidden_signals
     return {
         "id": acc_id,
         "is_fake": False,
@@ -99,27 +100,32 @@ def _gen_real_account(rng: random.Random, acc_id: str) -> Dict[str, Any]:
             "following_count": _lognormal_int(rng, 5.5, 1.2, 10, 5_000),
             "post_count": _lognormal_int(rng, 4.0, 1.0, 1, 5_000),
             "avg_post_hour": rng.uniform(6, 23),
-            "photo_reuse_score": round(_beta(rng, 1, 10), 4),
-            "bio_template_score": round(_beta(rng, 1, 8), 4),
             "account_age_days": rng.randint(30, 1825),
             "comment_repeat_score": round(_beta(rng, 1, 20), 4),  # mostly 0.0-0.08
-            "ip_cluster_id": f"ip_real_{acc_id}",
-            "shared_ip_count": 0,
+            "shared_ip_count": 0,  # Still visible (hint signal)
             "name_change_count": 0,
+        },
+        # Hidden signals (returned separately, revealed by tool calls)
+        "hidden_signals": {
+            "photo_reuse_score": round(_beta(rng, 1, 10), 4),
+            "bio_template_score": round(_beta(rng, 1, 8), 4),
+            "ip_cluster_id": f"ip_real_{acc_id}",
         },
         "true_edges": {"follows": [], "followed_by": []},
     }
 
 
 def _gen_decoy_account(rng: random.Random, acc_id: str) -> Dict[str, Any]:
+    # Round 2: Override hidden signals for decoys (elevated fake signals but not gang)
     acc = _gen_real_account(rng, acc_id)
-    acc["features"]["photo_reuse_score"] = round(rng.uniform(0.2, 0.4), 4)
-    acc["features"]["bio_template_score"] = round(rng.uniform(0.2, 0.4), 4)
+    acc["hidden_signals"]["photo_reuse_score"] = round(rng.uniform(0.2, 0.4), 4)
+    acc["hidden_signals"]["bio_template_score"] = round(rng.uniform(0.2, 0.4), 4)
     acc["features"]["comment_repeat_score"] = round(rng.uniform(0.10, 0.30), 4)
     return acc
 
 
 def _gen_celebrity_account(rng: random.Random, acc_id: str) -> Dict[str, Any]:
+    # Round 2: Celebrities have low fake signals (hidden)
     return {
         "id": acc_id,
         "is_fake": False,
@@ -129,13 +135,15 @@ def _gen_celebrity_account(rng: random.Random, acc_id: str) -> Dict[str, Any]:
             "following_count": rng.randint(50, 500),
             "post_count": rng.randint(500, 5000),
             "avg_post_hour": rng.uniform(6, 23),
-            "photo_reuse_score": round(rng.uniform(0.0, 0.05), 4),
-            "bio_template_score": round(rng.uniform(0.0, 0.05), 4),
             "account_age_days": rng.randint(1000, 3000),
             "comment_repeat_score": round(rng.uniform(0.0, 0.03), 4),
-            "ip_cluster_id": f"ip_celeb_{acc_id}",
             "shared_ip_count": 0,
             "name_change_count": 0,
+        },
+        "hidden_signals": {
+            "photo_reuse_score": round(rng.uniform(0.0, 0.05), 4),
+            "bio_template_score": round(rng.uniform(0.0, 0.05), 4),
+            "ip_cluster_id": f"ip_celeb_{acc_id}",
         },
         "true_edges": {"follows": [], "followed_by": []},
     }
@@ -147,6 +155,7 @@ def _gen_gang_accounts(
     cfg: Dict[str, Any],
     seed: int,
 ) -> List[Dict[str, Any]]:
+    # Round 2: Gang accounts have high fake signals (hidden until agent calls tools)
     gang_size = len(ids)
     base_age = rng.randint(30, 180)
     base_hour = cfg["post_hour_mean"]
@@ -164,13 +173,15 @@ def _gen_gang_accounts(
                 "following_count": rng.randint(200, 2_000),
                 "post_count": rng.randint(50, 500),
                 "avg_post_hour": round(max(0, min(23, rng.gauss(base_hour, std))), 2),
-                "photo_reuse_score": round(rng.uniform(ph_lo, ph_hi), 4),
-                "bio_template_score": round(rng.uniform(bt_lo, bt_hi), 4),
                 "account_age_days": base_age + rng.randint(0, 7),
                 "comment_repeat_score": round(rng.uniform(0.60, 0.90), 4),
-                "ip_cluster_id": f"ip_gang_{seed}",
-                "shared_ip_count": gang_size - 1,
+                "shared_ip_count": gang_size - 1,  # Hint: all gang members share IP
                 "name_change_count": 0,
+            },
+            "hidden_signals": {
+                "photo_reuse_score": round(rng.uniform(ph_lo, ph_hi), 4),
+                "bio_template_score": round(rng.uniform(bt_lo, bt_hi), 4),
+                "ip_cluster_id": f"ip_gang_{seed}",
             },
             "true_edges": {"follows": [], "followed_by": []},
         })
@@ -212,9 +223,19 @@ def _build_edges(
 # Episode generator
 # ---------------------------------------------------------------------------
 
-def generate_episode(task: str, seed: int) -> Dict[str, Any]:
+def generate_episode(task: str, seed: int, platform: str | None = None) -> Dict[str, Any]:
+    """
+    Generate synthetic episode with platform-specific configuration.
+
+    Round 2: Adds platform parameter and hidden_signals section.
+    Platform assignment: even seeds → Instagram, odd seeds → Snapchat
+    """
     cfg = TASK_CONFIG[task]
     rng = random.Random(seed)
+
+    # Round 2: Platform assignment (deterministic by seed)
+    if platform is None:
+        platform = "Instagram" if seed % 2 == 0 else "Snapchat"
 
     network_size = cfg["network_size"]
     gang_size = cfg["gang_size"]
@@ -275,10 +296,27 @@ def generate_episode(task: str, seed: int) -> Dict[str, Any]:
     starting_visible = forced_gang + additional
     rng.shuffle(starting_visible)                   # don't reveal which is fake
 
+    # Round 2: Extract hidden signals from accounts into centralized store
+    hidden_signals: Dict[str, Dict[str, Any]] = {
+        "photo_reuse": {},
+        "bio_template": {},
+        "ip_cluster": {},
+    }
+
+    # Move hidden_signals from account-level to episode-level
+    for acc in accounts:
+        acc_id = acc["id"]
+        if "hidden_signals" in acc:
+            hs = acc.pop("hidden_signals")  # Remove from account
+            hidden_signals["photo_reuse"][acc_id] = hs.get("photo_reuse_score", 0.0)
+            hidden_signals["bio_template"][acc_id] = hs.get("bio_template_score", 0.0)
+            hidden_signals["ip_cluster"][acc_id] = hs.get("ip_cluster_id", "")
+
     return {
-        "episode_id": str(uuid.uuid4()),
+        "episode_id": f"{task}_{seed:03d}_{platform}",  # Include platform in ID
         "task": task,
         "seed": seed,
+        "platform": platform,  # Round 2: Platform field
         "max_steps": cfg["max_steps"],
         "win_recall": cfg["win_recall"],
         "win_precision": cfg["win_precision"],
@@ -288,6 +326,7 @@ def generate_episode(task: str, seed: int) -> Dict[str, Any]:
         "celeb_ids": celeb_ids,
         "zero_edge_ids": zero_edge_ids,
         "network": {"accounts": accounts},
+        "hidden_signals": hidden_signals,  # Round 2: Centralized hidden signals
         "evasion_schedule": cfg["evasion_schedule"],
     }
 

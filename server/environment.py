@@ -16,8 +16,8 @@ from models import (
     FakeGangState,
     ActionType,
 )
-from generator import generate_episode, TASK_CONFIG
-from scoring import (
+from server.generator import generate_episode, TASK_CONFIG
+from server.scoring import (
     compute_node_risk,
     compute_behavior_risk,
     compute_graph_risk,
@@ -69,6 +69,24 @@ class FakeGangEnvironment(_OpenEnvBase):
         self._score: float = 0.0
         self._seed: int = 0
 
+        # Round 2: Platform-specific state
+        self._platform: str = ""
+        self._policy: Optional[Any] = None  # PlatformPolicy
+        self._revealed_signals: Dict[str, Dict[str, Any]] = {
+            "photo_reuse": {},
+            "bio_template": {},
+            "ip_cluster": {},
+        }
+        # Round 2: tool-use shaping bookkeeping (per-episode)
+        self._tool_calls: Dict[str, set] = {  # action_type -> set(account_id)
+            "reverse_image_search": set(),
+            "analyze_bio": set(),
+            "check_ip": set(),
+        }
+        self._policy_called_early: bool = False
+        self._action_count: int = 0  # total step() calls including 0-cost ones
+        self._decision_package: Dict[str, Any] = {}
+
     # ------------------------------------------------------------------
     # reset
     # ------------------------------------------------------------------
@@ -106,6 +124,23 @@ class FakeGangEnvironment(_OpenEnvBase):
         self._max_steps = ep["max_steps"]
         self._gang_ids = ep["gang_member_ids"]
 
+        # Round 2: Load platform policy and initialize revealed signals
+        self._platform = ep.get("platform", "Instagram")
+        self._policy = self._load_policy(self._platform)
+        self._revealed_signals = {
+            "photo_reuse": {},
+            "bio_template": {},
+            "ip_cluster": {},
+        }
+        self._tool_calls = {
+            "reverse_image_search": set(),
+            "analyze_bio": set(),
+            "check_ip": set(),
+        }
+        self._policy_called_early = False
+        self._action_count = 0
+        self._decision_package = {}
+
         # Build account map and live edges
         self._accounts = {a["id"]: a for a in ep["network"]["accounts"]}
         self._live_edges = {
@@ -135,6 +170,10 @@ class FakeGangEnvironment(_OpenEnvBase):
         atype = action.action_type
         acc_id = action.account_id
 
+        # Round 2: shaping — bonus when GET_POLICY is the very first action.
+        # Recorded once per episode; surfaced inside _do_get_policy.
+        self._action_count += 1
+
         # Trigger evasion if due BEFORE processing the action
         self._maybe_trigger_evasion()
 
@@ -153,6 +192,19 @@ class FakeGangEnvironment(_OpenEnvBase):
         if atype == ActionType.INVESTIGATE_NETWORK:
             return self._do_investigate(acc_id)
 
+        # Round 2: New tool-call actions
+        if atype == ActionType.REVERSE_IMAGE_SEARCH:
+            return self._do_reverse_image_search(acc_id)
+
+        if atype == ActionType.ANALYZE_BIO:
+            return self._do_analyze_bio(acc_id)
+
+        if atype == ActionType.CHECK_IP:
+            return self._do_check_ip(acc_id)
+
+        if atype == ActionType.GET_POLICY:
+            return self._do_get_policy()
+
         return self._make_observation(message=f"Unknown action: {atype}")
 
     # ------------------------------------------------------------------
@@ -170,6 +222,7 @@ class FakeGangEnvironment(_OpenEnvBase):
             network_size=len(self._accounts),
             gang_size=len(self._gang_ids),
             episode_seed=self._seed,
+            platform=self._platform,  # Round 2
         )
 
     # ------------------------------------------------------------------
@@ -325,6 +378,156 @@ class FakeGangEnvironment(_OpenEnvBase):
             self._account_statuses.pop(acc_id, None)
         return self._make_observation(message=f"Removed flag from {acc_id}.")
 
+    # ------------------------------------------------------------------
+    # Round 2: New tool-call action handlers
+    # ------------------------------------------------------------------
+
+    def _do_reverse_image_search(self, acc_id: Optional[str]) -> FakeGangObservation:
+        """Reveal photo_reuse_score for account (costs 1 step)."""
+        if acc_id is None or acc_id not in self._accounts:
+            return self._make_observation(message=f"Cannot REVERSE_IMAGE_SEARCH: account '{acc_id}' not found.")
+
+        # Shaping: penalize redundant tool reuse on same account
+        if acc_id in self._tool_calls["reverse_image_search"]:
+            self._score -= 0.05
+        self._tool_calls["reverse_image_search"].add(acc_id)
+
+        self._step_count += 1
+        self._score -= 0.01  # time cost
+
+        # Reveal from hidden store (or from features if old episode format)
+        if "hidden_signals" in self._ep and "photo_reuse" in self._ep["hidden_signals"]:
+            score = self._ep["hidden_signals"]["photo_reuse"].get(acc_id, 0.0)
+        else:
+            # Fallback: old episode format
+            score = self._accounts[acc_id]["features"].get("photo_reuse_score", 0.0)
+
+        self._revealed_signals["photo_reuse"][acc_id] = score
+
+        # Update account features
+        self._accounts[acc_id]["features"]["photo_reuse_score"] = score
+
+        # Refresh profile if already inspected
+        if acc_id in self._profiled:
+            self._profiled[acc_id] = self._build_profile(acc_id)
+
+        # Check step limit
+        if self._step_count >= self._max_steps:
+            return self._do_submit(forced=True)
+
+        count = int(score * 100)  # Simulate "found N matches"
+        return self._make_observation(
+            message=f"Reverse image search: {acc_id} has photo_reuse_score={score:.2f} (found {count} matching images)"
+        )
+
+    def _do_analyze_bio(self, acc_id: Optional[str]) -> FakeGangObservation:
+        """Reveal bio_template_score for account (costs 1 step)."""
+        if acc_id is None or acc_id not in self._accounts:
+            return self._make_observation(message=f"Cannot ANALYZE_BIO: account '{acc_id}' not found.")
+
+        if acc_id in self._tool_calls["analyze_bio"]:
+            self._score -= 0.05
+        self._tool_calls["analyze_bio"].add(acc_id)
+
+        self._step_count += 1
+        self._score -= 0.01  # time cost
+
+        # Reveal from hidden store (or from features if old episode format)
+        if "hidden_signals" in self._ep and "bio_template" in self._ep["hidden_signals"]:
+            score = self._ep["hidden_signals"]["bio_template"].get(acc_id, 0.0)
+        else:
+            # Fallback: old episode format
+            score = self._accounts[acc_id]["features"].get("bio_template_score", 0.0)
+
+        self._revealed_signals["bio_template"][acc_id] = score
+
+        # Update account features
+        self._accounts[acc_id]["features"]["bio_template_score"] = score
+
+        # Refresh profile if already inspected
+        if acc_id in self._profiled:
+            self._profiled[acc_id] = self._build_profile(acc_id)
+
+        # Check step limit
+        if self._step_count >= self._max_steps:
+            return self._do_submit(forced=True)
+
+        count = int(score * 10)  # Simulate "matches N templates"
+        return self._make_observation(
+            message=f"Bio analysis: {acc_id} has bio_template_score={score:.2f} (matches {count} known templates)"
+        )
+
+    def _do_check_ip(self, acc_id: Optional[str]) -> FakeGangObservation:
+        """Reveal ip_cluster_signal for account (costs 2 steps - expensive!)."""
+        if acc_id is None or acc_id not in self._accounts:
+            return self._make_observation(message=f"Cannot CHECK_IP: account '{acc_id}' not found.")
+
+        if acc_id in self._tool_calls["check_ip"]:
+            self._score -= 0.10  # CHECK_IP is expensive — heavier redundancy penalty
+        self._tool_calls["check_ip"].add(acc_id)
+
+        self._step_count += 2  # Higher cost (requires warrant/legal approval)
+        self._score -= 0.02
+
+        # Reveal from hidden store (or from features if old episode format)
+        if "hidden_signals" in self._ep and "ip_cluster" in self._ep["hidden_signals"]:
+            cluster_id = self._ep["hidden_signals"]["ip_cluster"].get(acc_id, "")
+        else:
+            # Fallback: old episode format
+            cluster_id = self._accounts[acc_id]["features"].get("ip_cluster_id", "")
+
+        self._revealed_signals["ip_cluster"][acc_id] = cluster_id
+
+        # Update account features
+        self._accounts[acc_id]["features"]["ip_cluster_id"] = cluster_id
+
+        # Count how many visible accounts share this cluster
+        if "hidden_signals" in self._ep and "ip_cluster" in self._ep["hidden_signals"]:
+            cluster_count = sum(
+                1 for vid in self._visible_ids
+                if self._ep["hidden_signals"]["ip_cluster"].get(vid) == cluster_id
+            )
+        else:
+            # Fallback: old episode format
+            cluster_count = sum(
+                1 for vid in self._visible_ids
+                if self._accounts.get(vid, {}).get("features", {}).get("ip_cluster_id") == cluster_id
+            )
+
+        # Refresh profile if already inspected
+        if acc_id in self._profiled:
+            self._profiled[acc_id] = self._build_profile(acc_id)
+
+        # Check step limit
+        if self._step_count >= self._max_steps:
+            return self._do_submit(forced=True)
+
+        return self._make_observation(
+            message=f"IP check: {acc_id} shares cluster '{cluster_id}' with {cluster_count} visible accounts"
+        )
+
+    def _do_get_policy(self) -> FakeGangObservation:
+        """Return platform policy information (costs 0 steps)."""
+        # Shaping: small bonus for calling GET_POLICY before any other action
+        if not self._policy_called_early and self._action_count == 1:
+            self._score += 0.20
+            self._policy_called_early = True
+
+        if self._policy is None:
+            return self._make_observation(message="Policy not available")
+
+        policy_info = (
+            f"Platform: {self._policy.platform} | "
+            f"Threshold: {self._policy.threshold:.3f} | "
+            f"Primary Signal: {self._policy.primary_enforcement_signal} | "
+            f"FP Penalty: {self._policy.fp_penalty_weight}x | "
+            f"({self._policy.fn_cost_signal} fn_cost, {self._policy.fp_cost_signal} fp_cost)"
+        )
+
+        return self._make_observation(message=f"Policy compiled: {policy_info}")
+
+    # ------------------------------------------------------------------
+
     def _do_submit(self, forced: bool = False) -> FakeGangObservation:
         self._done = True
         gang_set = set(self._gang_ids)
@@ -334,7 +537,9 @@ class FakeGangEnvironment(_OpenEnvBase):
         fp = len(flagged_set - gang_set)
         fn = len(gang_set - flagged_set)
 
-        reward = tp * 1.0 - fp * 0.5 - fn * 0.3
+        # Round 2: Platform-specific FP penalty
+        fp_penalty = self._policy.fp_penalty_weight if self._policy else 0.5
+        reward = tp * 1.0 - fp * fp_penalty - fn * 0.3
 
         recall = tp / len(gang_set) if gang_set else 0.0
         precision = tp / len(flagged_set) if flagged_set else 0.0
@@ -354,6 +559,13 @@ class FakeGangEnvironment(_OpenEnvBase):
         if not forced and steps_left >= self._max_steps * 0.5:
             reward += 1.0
 
+        # Round 2: Platform-specific bonus
+        if self._policy:
+            if self._policy.platform == "Instagram" and precision >= 0.95:
+                reward += 2.0  # Instagram rewards high precision
+            elif self._policy.platform == "Snapchat" and recall >= 0.95:
+                reward += 2.0  # Snapchat rewards high recall
+
         # Evasion penalty (hard mode)
         if self._task == "hard":
             reward -= self._evasion_count * 1.0
@@ -361,15 +573,72 @@ class FakeGangEnvironment(_OpenEnvBase):
         if forced:
             reward -= 2.0  # ran out of steps
 
+        # Round 2: insufficient-evidence penalty.
+        # Flagging an account whose hidden signals were never revealed is
+        # speculative; charge a small per-flag penalty.
+        revealed_any = (
+            set(self._revealed_signals["photo_reuse"])
+            | set(self._revealed_signals["bio_template"])
+            | set(self._revealed_signals["ip_cluster"])
+        )
+        unsupported_flags = [f for f in self._flagged if f not in revealed_any]
+        if unsupported_flags:
+            reward -= 0.15 * len(unsupported_flags)
+
         self._score += reward
-        self._last_grader_score = _compute_grader_score(tp, fp, fn, self._step_count, self._max_steps)
+
+        # Round 2: Platform-aware grader score
+        threshold = self._policy.threshold if self._policy else 0.35
+        self._last_grader_score = _compute_grader_score(
+            tp, fp, fn, self._step_count, self._max_steps, threshold, fp_penalty
+        )
 
         won = recall >= win_recall and precision >= win_precision
+
+        # Round 2: build moderation decision package.
+        # The recommended action is policy-aware: precision-leaning platforms
+        # (low FP penalty already paid for) escalate; recall-leaning platforms
+        # batch-takedown when recall is high.
+        if precision >= 0.95 and recall >= 0.9:
+            recommended_action = "batch_takedown"
+        elif precision >= 0.8 and recall >= 0.7:
+            recommended_action = "scheduled_ban"
+        elif precision >= 0.6:
+            recommended_action = "temporary_hold"
+        else:
+            recommended_action = "queue_for_review"
+
+        evidence_summary = {
+            "flagged": list(self._flagged),
+            "revealed_photo_reuse": len(self._revealed_signals["photo_reuse"]),
+            "revealed_bio_template": len(self._revealed_signals["bio_template"]),
+            "revealed_ip_cluster": len(self._revealed_signals["ip_cluster"]),
+            "unsupported_flags": unsupported_flags,
+        }
+        policy_rationale = (
+            f"{self._platform} policy θ={threshold:.3f} "
+            f"(primary={self._policy.primary_enforcement_signal if self._policy else '?'}, "
+            f"FP penalty={fp_penalty}); "
+            f"observed precision={precision:.2f}, recall={recall:.2f}."
+        )
+        self._decision_package = {
+            "platform": self._platform,
+            "flagged_accounts": list(self._flagged),
+            "recommended_action": recommended_action,
+            "evidence_summary": evidence_summary,
+            "policy_rationale": policy_rationale,
+            "tp": tp, "fp": fp, "fn": fn,
+            "precision": precision, "recall": recall,
+            "reward": self._score,
+            "grader_score": self._last_grader_score,
+        }
+
         msg = (
             f"{'[WIN] ' if won else '[LOSS] '}"
             f"TP={tp} FP={fp} FN={fn} "
             f"Recall={recall:.2f} Precision={precision:.2f} "
-            f"Episode reward={self._score:.2f}"
+            f"Episode reward={self._score:.2f} | "
+            f"Decision: {recommended_action} | {policy_rationale}"
         )
         return self._make_observation(message=msg, terminal_reward=self._score)
 
@@ -485,7 +754,11 @@ class FakeGangEnvironment(_OpenEnvBase):
         suspicious_mutual_ratio = self._compute_suspicious_mutual_ratio(acc_id, follows)
         flagged_neighbor_ratio = flagged_neighbor_count / max(inspected_neighbor_count, 1)
 
-        node_risk = compute_node_risk(f["photo_reuse_score"], f["bio_template_score"])
+        # Round 2: Use 0.0 for signals that haven't been revealed yet
+        photo_reuse = f.get("photo_reuse_score", 0.0)
+        bio_template = f.get("bio_template_score", 0.0)
+
+        node_risk = compute_node_risk(photo_reuse, bio_template)
         behavior_risk = compute_behavior_risk(f["account_age_days"], post_hour_cluster_score)
         graph_risk = compute_graph_risk(flagged_neighbor_ratio, mutual_follow_rate, avg_neighbor_photo_reuse)
         hub_legitimacy = compute_hub_legitimacy(
@@ -506,8 +779,8 @@ class FakeGangEnvironment(_OpenEnvBase):
             following_count=f["following_count"],
             post_count=f["post_count"],
             avg_post_hour=f["avg_post_hour"],
-            photo_reuse_score=f["photo_reuse_score"],
-            bio_template_score=f["bio_template_score"],
+            photo_reuse_score=photo_reuse,  # Round 2: Use variable (0.0 if not revealed)
+            bio_template_score=bio_template,  # Round 2: Use variable (0.0 if not revealed)
             account_age_days=f["account_age_days"],
             name_change_count=f.get("name_change_count", 0),
             flagged_neighbor_count=flagged_neighbor_count,
@@ -597,6 +870,7 @@ class FakeGangEnvironment(_OpenEnvBase):
                 if sid not in self._flagged
                 and self._account_statuses.get(sid, "normal") == "suspect"
             ],
+            platform=self._platform,  # Round 2: Pass platform to observation
         )
 
     def _load_episode(self, task: str, seed: int) -> Dict[str, Any]:
@@ -609,3 +883,26 @@ class FakeGangEnvironment(_OpenEnvBase):
         EPISODES_DIR.mkdir(parents=True, exist_ok=True)
         fname.write_text(json.dumps(ep, indent=2))
         return ep
+
+    def _load_policy(self, platform: str) -> Optional[Any]:
+        """Load platform policy from compiler."""
+        try:
+            from server.policy_compiler import get_policy
+            return get_policy(platform)
+        except Exception as e:
+            print(f"Warning: Failed to load policy for {platform}: {e}")
+            # Return a minimal fallback policy
+            from models import PlatformPolicy
+            return PlatformPolicy(
+                platform=platform,
+                threshold=0.35,  # Default threshold
+                base_rate=0.005,
+                fn_cost_signal="high",
+                fp_cost_signal="medium",
+                harm_weight=1.0,
+                primary_enforcement_signal="photo_reuse",
+                fp_penalty_weight=0.5,
+                sources=[],
+                confidence=0.0,
+                compiled_at=""
+            )

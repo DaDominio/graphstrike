@@ -43,6 +43,12 @@ tags:
 
 <br>
 
+## Round 2 — Platform-Adaptive Trust & Safety
+
+Round 2 makes detection **platform-aware**. Each episode is assigned to Instagram or Snapchat (by seed parity); a `PlatformPolicy` is compiled from real transparency-report text via a Bayesian threshold (`θ* = 1/(1 + π·C_fn/((1−π)·C_fp))`); and the high-signal account fields (`photo_reuse_score`, `bio_template_score`, `ip_cluster_id`) start hidden — the agent must spend steps on `REVERSE_IMAGE_SEARCH`, `ANALYZE_BIO`, `CHECK_IP`, plus a free `GET_POLICY`, to reveal them. Reward shape, FP penalty, grader threshold, and submission decision (`queue_for_review` / `temporary_hold` / `scheduled_ban` / `batch_takedown`) are all derived from the compiled policy rather than hardcoded.
+
+Full architecture, scoring math, tool contracts, and training/quickstart commands live in **[`reference.md`](reference.md)** (single source of truth).
+
 ## Theme
 
 **SUPPORT**

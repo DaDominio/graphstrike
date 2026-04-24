@@ -98,27 +98,44 @@ def log_end(success: bool, steps: int, score: float, rewards: List[float]) -> No
 SYSTEM_PROMPT = textwrap.dedent("""
     You are an AI detective finding 10 coordinated fake accounts in a social network.
 
-    ACTIONS (reply with exactly ONE line):
-    - INSPECT acc_XXXX  — reveal profile (costs 1 step)
-    - FLAG acc_XXXX     — mark as fake (FREE, no step cost, triggers suspect cascade)
-    - SUBMIT            — end episode, get scored
+    ━━━ ROUND 2: PLATFORM-ADAPTIVE DETECTION ━━━
+    Episodes run on specific platforms (Instagram/Snapchat) with different thresholds and enforcement priorities.
 
-    DECISION RULES (apply top-to-bottom, first match wins):
-    1. If suspect_ids lists accounts you haven't inspected → INSPECT the first one
-    2. If ANY profiled account has shared_ip_count >= 5 and is NOT flagged → FLAG it immediately
-    3. If ANY profiled account has photo_reuse >= 0.50 AND bio_template >= 0.40 and hub < 0.70 and NOT flagged → FLAG it
-    4. If ANY profiled account has fake_risk_score >= 0.30 and hub < 0.70 and NOT flagged → FLAG it
-    5. If there are uninspected visible accounts and steps > 3 → INSPECT the next one
-    6. If you have 10 flags OR steps <= 3 → SUBMIT
+    ACTIONS (reply with exactly ONE line):
+    - GET_POLICY              — get platform policy (FREE, call first!)
+    - INSPECT acc_XXXX        — reveal profile (costs 1 step)
+    - REVERSE_IMAGE_SEARCH acc_XXXX  — reveal photo_reuse_score (costs 1 step)
+    - ANALYZE_BIO acc_XXXX    — reveal bio_template_score (costs 1 step)
+    - CHECK_IP acc_XXXX       — reveal ip_cluster_id (costs 2 steps, expensive!)
+    - FLAG acc_XXXX           — mark as fake (FREE, no step cost, triggers suspect cascade)
+    - SUBMIT                  — end episode, get scored
+
+    DECISION RULES (Round 2, apply top-to-bottom):
+    1. First action of episode → GET_POLICY (learn platform threshold and primary signal)
+    2. If suspect_ids lists accounts you haven't inspected → INSPECT the first one
+    3. If ANY profiled account has shared_ip_count >= 5 → CHECK_IP to confirm cluster, then FLAG
+    4. If photo_reuse_score or bio_template_score is 0.0 on suspicious accounts → use REVERSE_IMAGE_SEARCH or ANALYZE_BIO
+    5. If ANY profiled account has photo_reuse >= 0.50 AND bio_template >= 0.40 and hub < 0.70 → FLAG
+    6. If fake_risk_score >= platform_threshold and hub < 0.70 → FLAG
+    7. If uninspected visible accounts and steps > 3 → INSPECT the next one
+    8. If you have 10 flags OR steps <= 3 → SUBMIT
+
+    PLATFORM-SPECIFIC STRATEGIES:
+    - Instagram (threshold ~0.08, high FP penalty): Be precise, use REVERSE_IMAGE_SEARCH on borderline cases
+    - Snapchat (threshold ~0.74, low FP penalty): Be aggressive, flag when fake_risk >= 0.74
 
     IMPORTANT:
+    - Hidden signals (photo_reuse, bio_template, ip_cluster) start as 0.0/None — use tools to reveal!
+    - GET_POLICY is FREE and shows platform threshold — always call first
     - FLAG is FREE (costs 0 steps) — flag aggressively when you see suspicious signals
-    - After each FLAG, new suspects appear — always inspect suspects before other accounts
+    - CHECK_IP costs 2 steps (expensive) — only use when shared_ip_count >= 5
     - hub_legitimacy_score > 0.70 means celebrity — do NOT flag
-    - shared_ip_count >= 5 is the strongest gang signal (all 10 share one IP)
-    - Do NOT re-inspect already inspected accounts
 
     Reply with EXACTLY one line, nothing else:
+    GET_POLICY
+    REVERSE_IMAGE_SEARCH acc_XXXX
+    ANALYZE_BIO acc_XXXX
+    CHECK_IP acc_XXXX
     FLAG acc_XXXX
     INSPECT acc_XXXX
     SUBMIT
@@ -128,7 +145,12 @@ SYSTEM_PROMPT = textwrap.dedent("""
 def _format_obs_for_llm(obs_data: dict) -> str:
     """Format observation as text prompt for the LLM — shows raw signals prominently."""
     lines = []
-    lines.append(f"TASK: {obs_data.get('task', '?').upper()} | Steps remaining: {obs_data.get('steps_remaining', '?')}")
+
+    # Round 2: Show platform context
+    platform = obs_data.get("platform", "Unknown")
+    platform_info = f" | PLATFORM: {platform}" if platform != "Unknown" else ""
+
+    lines.append(f"TASK: {obs_data.get('task', '?').upper()}{platform_info} | Steps remaining: {obs_data.get('steps_remaining', '?')}")
     flagged = obs_data.get("flagged_ids", [])
     lines.append(f"Flagged ({len(flagged)}/10): {', '.join(flagged) if flagged else 'none'}")
 
@@ -189,10 +211,23 @@ def _parse_llm_action(text: str, obs_data: dict) -> str:
         parts = line.split(maxsplit=1)
         verb = parts[0].upper()
         acc = parts[1].lower() if len(parts) > 1 else None
+
+        # Round 2: New tool actions
+        if verb == "GET_POLICY":
+            return "GET_POLICY"
+        if verb == "REVERSE_IMAGE_SEARCH" and acc:
+            return f"REVERSE_IMAGE_SEARCH {acc}"
+        if verb == "ANALYZE_BIO" and acc:
+            return f"ANALYZE_BIO {acc}"
+        if verb == "CHECK_IP" and acc:
+            return f"CHECK_IP {acc}"
+
+        # Round 1 actions
         if verb in ("INSPECT", "FLAG", "UNFLAG", "INVESTIGATE_NETWORK"):
             return f"{verb} {acc}" if acc else verb
         if verb == "SUBMIT":
             return "SUBMIT"
+
     # Fallback: inspect first uninspected suspect or visible account
     suspects = obs_data.get("suspect_ids", [])
     inspected = obs_data.get("inspected_ids", [])
@@ -223,10 +258,15 @@ def _rule_prefilter(obs_data: dict) -> Optional[str]:
     Only fires when the correct action is completely unambiguous — this avoids
     wasting LLM calls (and wall-clock time) on decisions that don't need reasoning.
     Returns None when the LLM should decide.
+
+    Round 2: Handles GET_POLICY as first action and hidden signals (0.0 values).
     """
     flagged = set(obs_data.get("flagged_ids", []))
     inspected = set(obs_data.get("inspected_ids", []))
     steps_remaining = obs_data.get("steps_remaining", 999)
+
+    # Round 2: GET_POLICY should be first action if platform unknown
+    # (This is handled by LLM, but we don't auto-fire it here to allow flexibility)
 
     # Forced submit when out of steps
     if steps_remaining <= 0:
@@ -250,14 +290,21 @@ def _rule_prefilter(obs_data: dict) -> Optional[str]:
             continue
         if a.get("hub_legitimacy_score", 0) > 0.75:
             continue  # protect celebrities
+
         # Shared IP is the strongest signal: all gang members share ip_gang_{seed}
         if a.get("shared_ip_count", 0) >= 5:
             return f"FLAG {aid}"
-        # Both content signals very high → clear fake, flag without LLM
-        if a.get("photo_reuse_score", 0) >= 0.65 and a.get("bio_template_score", 0) >= 0.55:
+
+        # Round 2: Only flag on content signals if they're revealed (non-zero)
+        # If signals are 0.0, they may be hidden → let LLM decide whether to investigate
+        photo = a.get("photo_reuse_score", 0)
+        bio = a.get("bio_template_score", 0)
+
+        # Both content signals very high AND revealed → clear fake, flag without LLM
+        if photo >= 0.65 and bio >= 0.55:
             return f"FLAG {aid}"
 
-    # No obvious action — let the LLM decide (exploration, borderline flags, etc.)
+    # No obvious action — let the LLM decide (exploration, borderline flags, tool usage)
     return None
 
 
