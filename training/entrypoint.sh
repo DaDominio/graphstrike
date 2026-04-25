@@ -18,6 +18,10 @@ set -euo pipefail
 cd /app
 
 PHASE="${PHASE:-phase1}"
+# Normalize: accept "0"/"1"/"2"/"3" as shorthand for phase0..phase3.
+case "$PHASE" in
+    0|1|2|3) PHASE="phase${PHASE}" ;;
+esac
 MODEL="${MODEL:-Qwen/Qwen2.5-1.5B-Instruct}"
 PLATFORM="${PLATFORM:-Instagram}"
 ENV_BASE_URL="${ENV_BASE_URL:-https://pandago-graphstrike-model-training.hf.space}"

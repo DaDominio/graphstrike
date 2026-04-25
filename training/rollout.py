@@ -60,18 +60,20 @@ class HFPolicy:
         self._load()
         from training.prompts import build_chat
         chat = build_chat(prompt)
-        inputs = self._tok.apply_chat_template(chat, return_tensors="pt", add_generation_prompt=True)
-        inputs = inputs.to(self._model.device)
+        enc = self._tok.apply_chat_template(chat, return_tensors="pt", add_generation_prompt=True)
+        # Newer transformers returns a BatchEncoding (dict-like); older returns a Tensor.
+        input_ids = enc["input_ids"] if hasattr(enc, "data") else enc
+        input_ids = input_ids.to(self._model.device)
         import torch
         with torch.no_grad():
             out = self._model.generate(
-                inputs,
+                input_ids,
                 max_new_tokens=self.max_new_tokens,
                 do_sample=self.temperature > 0,
                 temperature=max(self.temperature, 1e-5),
                 pad_token_id=self._tok.pad_token_id,
             )
-        text = self._tok.decode(out[0, inputs.shape[-1]:], skip_special_tokens=True)
+        text = self._tok.decode(out[0, input_ids.shape[-1]:], skip_special_tokens=True)
         return text
 
 

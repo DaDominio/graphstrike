@@ -37,10 +37,10 @@ from training.rollout import HFPolicy, rollout_batch, reward_for_tuple  # noqa: 
 
 
 PHASE_CONFIG = {
-    "phase0": dict(steps=0,    eps_per_step=8, lr=0.0,  desc="baseline only, no training"),
-    "phase1": dict(steps=10,   eps_per_step=1, lr=1e-6, desc="smoke: gradients flow, no NaN"),
-    "phase2": dict(steps=50,   eps_per_step=4, lr=1e-6, desc="signal: reward should trend up"),
-    "phase3": dict(steps=1000, eps_per_step=8, lr=5e-7, desc="full run"),
+    "phase0": dict(steps=0,    eps_per_step=8, lr=0.0,  num_gen=2, desc="baseline only, no training"),
+    "phase1": dict(steps=10,   eps_per_step=1, lr=1e-6, num_gen=2, desc="smoke: gradients flow, no NaN"),
+    "phase2": dict(steps=50,   eps_per_step=4, lr=1e-6, num_gen=4, desc="signal: reward should trend up"),
+    "phase3": dict(steps=1000, eps_per_step=8, lr=5e-7, num_gen=4, desc="full run"),
 }
 
 
@@ -54,7 +54,8 @@ def parse_args():
     p.add_argument("--seeds", nargs="+", type=int, default=list(range(8)))
     p.add_argument("--out-dir", default=str(_HERE / "runs"))
     p.add_argument("--wandb-project", default=None)
-    p.add_argument("--num-generations", type=int, default=4, help="GRPO group size")
+    p.add_argument("--num-generations", type=int, default=None,
+                   help="GRPO group size (default: from PHASE_CONFIG per phase)")
     return p.parse_args()
 
 
@@ -162,10 +163,15 @@ def train(args):
                 out.append(0.0)
         return out
 
+    # num_gen comes from PHASE_CONFIG so phase1 always uses 2.
+    # TRL's find_executable_batch_size may halve per_device_train_batch_size at
+    # runtime; setting num_generations <= that halved floor prevents the
+    # "generation_batch_size must be divisible by num_generations" error.
+    num_gen = args.num_generations or cfg["num_gen"]
     grpo_cfg = GRPOConfig(
         output_dir=str(Path(args.out_dir) / args.phase),
-        per_device_train_batch_size=2,
-        num_generations=args.num_generations,
+        per_device_train_batch_size=num_gen,
+        num_generations=num_gen,
         max_steps=cfg["steps"],
         learning_rate=cfg["lr"],
         logging_steps=1,

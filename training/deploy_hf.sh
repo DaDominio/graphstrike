@@ -61,17 +61,34 @@ EOF
 mv -f ./README.md.space ./README.md
 
 # --- Step 3: upload (exclude heavy/local-only paths) -------------------------
-echo "[deploy] uploading working copy"
+echo "[deploy] uploading working copy (heavy dirs excluded — env is remote)"
 hf upload "$REPO" . . --repo-type space \
+    --exclude "episodes/*" \
+    --exclude "dashboard/*" \
+    --exclude "wheels/*" \
+    --exclude "assets/*" \
+    --exclude "images/*" \
+    --exclude "agent/*" \
+    --exclude "tests/*" \
+    --exclude "graphify-out/*" \
+    --exclude "model-benchmark-logs/*" \
+    --exclude "runs/*" \
     --exclude "training/runs/*" \
     --exclude "eval-models/results/*" \
+    --exclude "memory/*" \
+    --exclude "policy_cache/*" \
+    --exclude "server/episodes/*" \
     --exclude "**/__pycache__/*" \
     --exclude "**/.pytest_cache/*" \
-    --exclude "**/*.pyc"
+    --exclude "**/*.pyc" \
+    --exclude "**/*.log" \
+    --exclude "judge_log.txt" \
+    --exclude "uv.lock" \
+    --exclude ".git/*"
 
 # --- Step 4: request GPU hardware --------------------------------------------
 echo "[deploy] requesting hardware: $HW"
-python - <<PY
+python3 - <<PY
 from huggingface_hub import HfApi, SpaceHardware
 hw_map = {
     "t4-medium":   SpaceHardware.T4_MEDIUM,
