@@ -46,6 +46,7 @@ class ResetRequest(BaseModel):
     task: str = "easy"
     seed: Optional[int] = None
     episode_id: Optional[str] = None
+    platform: Optional[str] = None
 
 class StepResponse(BaseModel):
     observation: Dict[str, Any]
@@ -88,7 +89,7 @@ def _build_step_response(obs) -> StepResponse:
 def reset(req: Optional[ResetRequest] = Body(default=None)):
     if req is None:
         req = ResetRequest()
-    obs = _env.reset(task=req.task, seed=req.seed, episode_id=req.episode_id)
+    obs = _env.reset(task=req.task, seed=req.seed, episode_id=req.episode_id, platform=req.platform)
     return _build_step_response(obs)
 
 @app.post("/step", response_model=StepResponse)

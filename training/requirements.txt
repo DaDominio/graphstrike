@@ -1,0 +1,16 @@
+# GRPO training stack — installed first so the cached layer is reusable.
+torch==2.4.1
+transformers>=4.45.0
+trl>=0.11.0
+datasets>=2.20.0
+accelerate>=0.34.0
+peft>=0.12.0
+bitsandbytes>=0.43.0
+hf-transfer
+wandb
+huggingface_hub>=0.25.0
+# Env server is launched from this same image:
+fastapi
+uvicorn[standard]
+pydantic>=2
+requests

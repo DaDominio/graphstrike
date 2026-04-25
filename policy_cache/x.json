@@ -8,14 +8,14 @@
   "primary_enforcement_signal": "photo_reuse",
   "fp_penalty_weight": 0.1,
   "sources": [
-    "https://san.com/cc/x-announces-stricter-rules-for-parody-accounts/",
-    "https://www.rmndigital.com/x-of-elon-musk-implements-stricter-rules-for-parody-accounts-to-combat-misleading-impersonation/",
-    "https://www.medianama.com/2025/04/223-x-parody-account-rules-2025/",
     "https://ag.ny.gov/sites/default/files/social-media-policy-report/2025-q3-x-corp-policy.pdf",
-    "https://www.bbc.com/news/articles/c4g37elkrxdo",
-    "https://help.x.com/en/rules-and-policies/x-rules"
+    "https://san.com/cc/x-announces-stricter-rules-for-parody-accounts/",
+    "https://oag.ca.gov/sites/default/files/X%20Corp.%20-%20California%20Terms%20of%20Service%20Report%20-%20H2%202024.pdf/X%20Corp.%20-%20California%20Terms%20of%20Service%20Report%20-%20H2%202024.pdf",
+    "https://www.medianama.com/2025/04/223-x-parody-account-rules-2025/",
+    "https://www.rmndigital.com/x-of-elon-musk-implements-stricter-rules-for-parody-accounts-to-combat-misleading-impersonation/",
+    "https://www.bbc.com/news/articles/c4g37elkrxdo"
   ],
   "confidence": 0.8,
-  "compiled_at": "2026-04-25T04:07:52.626907+00:00",
+  "compiled_at": "2026-04-25T08:11:09.100914+00:00",
   "used_fallback": false
 }

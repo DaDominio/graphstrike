@@ -97,6 +97,7 @@ class FakeGangEnvironment(_OpenEnvBase):
         task: str = "easy",
         episode_id: Optional[str] = None,
         seed: Optional[int] = None,
+        platform: Optional[str] = None,
         **kwargs: Any,
     ) -> FakeGangObservation:
         self._task = task
@@ -126,7 +127,11 @@ class FakeGangEnvironment(_OpenEnvBase):
         self._max_steps = ep["max_steps"]
         self._gang_ids = ep["gang_member_ids"]
 
-        # Round 2: Load platform policy and initialize revealed signals
+        # Round 2: Load platform policy and initialize revealed signals.
+        # Optional platform override lets callers swap the policy lens without
+        # regenerating the episode (network/hidden-signals stay platform-agnostic).
+        if platform is not None:
+            ep["platform"] = platform
         self._platform = ep.get("platform", "Instagram")
         self._policy = self._load_policy(self._platform)
         self._revealed_signals = {

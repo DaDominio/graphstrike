@@ -1,0 +1,21 @@
+{
+  "platform": "tiktok",
+  "threshold": 0.091324200913242,
+  "base_rate": 0.005,
+  "fn_cost_signal": "high",
+  "fp_cost_signal": "low",
+  "harm_weight": 1.0,
+  "primary_enforcement_signal": "photo_reuse",
+  "fp_penalty_weight": 0.1,
+  "sources": [
+    "https://www.linkedin.com/posts/lankatalks_tiktok-releases-q4-2025-community-guidelines-activity-7450425672415756289-Xoue",
+    "https://www.lankatalks.com/post/tiktok-releases-q4-2025-community-guidelines-enforcement-report",
+    "https://www.revoscience.com/en/tiktok-releases-q1-2025-community-guidelines-enforcement-report/?srsltid=AfmBOooSpFqeUGfP4c5pYiZeHChH_Ukp_1ZhTaR3iDF0CuY2UyudNvY_",
+    "https://ag.ny.gov/sites/default/files/social-media-policy-report/2025-q3-tiktok-inc-policy.pdf",
+    "https://disinfocode.eu/reports/tiktok/6?commitmentId=265&chapterId=53",
+    "https://www.tiktok.com/legal/page/global/law-enforcement/en"
+  ],
+  "confidence": 0.8,
+  "compiled_at": "2026-04-25T08:12:37.093531+00:00",
+  "used_fallback": false
+}

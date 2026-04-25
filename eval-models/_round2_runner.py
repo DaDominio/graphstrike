@@ -205,12 +205,20 @@ def _gather_and_flag(
     call_llm: Callable[[str], str],
     log: EpisodeLog,
     max_dp1_iters: int = 4,
+    tuples: Optional[List[Dict]] = None,
 ) -> StepResult:
     """Run DP1 tool-gathering loop then DP2 flag decision for one account.
     Returns the latest StepResult (observation reflects any actions taken).
+
+    If `tuples` is provided, each LLM decision appends a dict with keys:
+      prompt, completion, step_reward, decision_type, platform, threshold,
+      fp_penalty, step_index
     """
     last = StepResult(observation=obs, done=False, reward=None, message="")
     last.observation = obs
+    plat = policy.get("platform") or log.platform
+    fp_w = policy.get("fp_weight", "?")
+    thr = float(policy.get("threshold", 0.0) or 0.0)
 
     # DP1 loop
     for _ in range(max_dp1_iters):
@@ -240,8 +248,20 @@ def _gather_and_flag(
         choice = _parse_dp1(resp)
         if choice is None:
             log.dp1_invalid += 1
+            if tuples is not None:
+                tuples.append({
+                    "prompt": prompt, "completion": resp, "step_reward": 0.0,
+                    "decision_type": "dp1", "platform": plat, "threshold": thr,
+                    "fp_penalty": fp_w, "step_index": log.steps_taken,
+                })
             break
         if choice == "done":
+            if tuples is not None:
+                tuples.append({
+                    "prompt": prompt, "completion": resp, "step_reward": 0.0,
+                    "decision_type": "dp1", "platform": plat, "threshold": thr,
+                    "fp_penalty": fp_w, "step_index": log.steps_taken,
+                })
             break
 
         atype = {
@@ -252,6 +272,13 @@ def _gather_and_flag(
         last = client.step(FakeGangAction(action_type=atype, account_id=account_id))
         log.tool_calls[choice] = log.tool_calls.get(choice, 0) + 1
         log.steps_taken += 1
+        if tuples is not None:
+            tuples.append({
+                "prompt": prompt, "completion": resp,
+                "step_reward": float(last.reward) if last.reward is not None else 0.0,
+                "decision_type": "dp1", "platform": plat, "threshold": thr,
+                "fp_penalty": fp_w, "step_index": log.steps_taken,
+            })
         if last.done or last.observation.steps_remaining <= 1:
             return last
 
@@ -281,12 +308,19 @@ def _gather_and_flag(
     log.dp2_calls += 1
     resp = call_llm(prompt)
     choice = _parse_dp2(resp)
+    step_reward = 0.0
     if choice is None:
         log.dp2_invalid += 1
-        return last
-    if choice == "flag":
+    elif choice == "flag":
         last = client.step(FakeGangAction(action_type=ActionType.FLAG, account_id=account_id))
         log.flagged = len(last.observation.flagged_ids)
+        step_reward = float(last.reward) if last.reward is not None else 0.0
+    if tuples is not None:
+        tuples.append({
+            "prompt": prompt, "completion": resp, "step_reward": step_reward,
+            "decision_type": "dp2", "platform": plat, "threshold": thr,
+            "fp_penalty": fp_w, "step_index": log.steps_taken,
+        })
     return last
 
 
@@ -302,8 +336,12 @@ def _run_episode(
     seed: int,
     call_llm: Callable[[str], str],
     max_accounts_per_episode: int = 15,
-) -> EpisodeLog:
+    collect_tuples: bool = False,
+):
+    """Run one episode. Returns EpisodeLog by default, or
+    (EpisodeLog, list[tuple_dict]) when collect_tuples=True."""
     log = EpisodeLog(model=model, platform=platform, task=task, seed=seed)
+    tuples: List[Dict] = [] if collect_tuples else None  # type: ignore[assignment]
     t0 = time.time()
 
     res = client.reset(task=task, seed=seed)
@@ -359,7 +397,7 @@ def _run_episode(
                 break
 
         # DP1 + DP2 per account
-        res = _gather_and_flag(client, obs, aid, policy, call_llm, log)
+        res = _gather_and_flag(client, obs, aid, policy, call_llm, log, tuples=tuples)
         obs = res.observation
         processed.add(aid)
         if res.done:
@@ -383,6 +421,12 @@ def _run_episode(
     except Exception:
         pass
 
+    if collect_tuples:
+        # Attach episode-level identifiers to each decision tuple.
+        for t in tuples:
+            t["episode_id"] = log.episode_id
+            t["grader_score"] = log.grader_score
+        return log, tuples
     return log
 
 
