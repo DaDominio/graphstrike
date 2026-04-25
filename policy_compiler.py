@@ -5,10 +5,13 @@ import requests
 import json
 import re
 import time
+import os
+from dotenv import load_dotenv
+load_dotenv()
 
 # ================= CONFIG =================
-TAVILY_API_KEY = "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"
-GROQ_API_KEY = "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"
+TAVILY_API_KEY = os.getenv("TAVILY_API_KEY")
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
 K = 6
 MAX_CONTEXT_CHARS = 6000

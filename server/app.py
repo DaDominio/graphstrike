@@ -52,6 +52,10 @@ class StepResponse(BaseModel):
     done: bool
     reward: Optional[float]
     message: str
+    # Round 2: top-level fields surfaced after submit so callers don't have to
+    # parse the message string. Both are None for non-terminal steps.
+    decision_package: Optional[Dict[str, Any]] = None
+    grader_score: Optional[float] = None
 
 # ---------------------------------------------------------------------------
 # OpenEnv API endpoints
@@ -61,17 +65,36 @@ class StepResponse(BaseModel):
 def health():
     return {"status": "healthy"}
 
+def _build_step_response(obs) -> StepResponse:
+    decision = _env._decision_package if obs.done and _env._decision_package else None
+    # Always source grader_score from the decision package when present so the
+    # top-level field and decision_package["grader_score"] cannot disagree.
+    if decision and "grader_score" in decision:
+        grader = decision["grader_score"]
+    elif obs.done:
+        grader = _env._last_grader_score
+    else:
+        grader = None
+    return StepResponse(
+        observation=obs.model_dump(),
+        done=obs.done,
+        reward=obs.reward,
+        message=obs.message,
+        decision_package=decision,
+        grader_score=grader,
+    )
+
 @app.post("/reset", response_model=StepResponse)
 def reset(req: Optional[ResetRequest] = Body(default=None)):
     if req is None:
         req = ResetRequest()
     obs = _env.reset(task=req.task, seed=req.seed, episode_id=req.episode_id)
-    return StepResponse(observation=obs.model_dump(), done=obs.done, reward=obs.reward, message=obs.message)
+    return _build_step_response(obs)
 
 @app.post("/step", response_model=StepResponse)
 def step(action: FakeGangAction):
     obs = _env.step(action)
-    return StepResponse(observation=obs.model_dump(), done=obs.done, reward=obs.reward, message=obs.message)
+    return _build_step_response(obs)
 
 @app.get("/state")
 def state():

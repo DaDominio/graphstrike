@@ -1,0 +1,21 @@
+{
+  "platform": "X",
+  "threshold": 0.091324200913242,
+  "base_rate": 0.005,
+  "fn_cost_signal": "high",
+  "fp_cost_signal": "low",
+  "harm_weight": 1.0,
+  "primary_enforcement_signal": "photo_reuse",
+  "fp_penalty_weight": 0.1,
+  "sources": [
+    "https://san.com/cc/x-announces-stricter-rules-for-parody-accounts/",
+    "https://www.rmndigital.com/x-of-elon-musk-implements-stricter-rules-for-parody-accounts-to-combat-misleading-impersonation/",
+    "https://www.medianama.com/2025/04/223-x-parody-account-rules-2025/",
+    "https://ag.ny.gov/sites/default/files/social-media-policy-report/2025-q3-x-corp-policy.pdf",
+    "https://www.bbc.com/news/articles/c4g37elkrxdo",
+    "https://help.x.com/en/rules-and-policies/x-rules"
+  ],
+  "confidence": 0.8,
+  "compiled_at": "2026-04-25T04:07:52.626907+00:00",
+  "used_fallback": false
+}

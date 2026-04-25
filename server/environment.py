@@ -67,6 +67,7 @@ class FakeGangEnvironment(_OpenEnvBase):
         self._episode_id: str = ""
         self._done: bool = False
         self._score: float = 0.0
+        self._last_score: float = 0.0  # snapshot before current step; used to compute per-step reward delta
         self._seed: int = 0
 
         # Round 2: Platform-specific state
@@ -112,6 +113,7 @@ class FakeGangEnvironment(_OpenEnvBase):
         self._last_grader_score = 0.0
         self._done = False
         self._score = 0.0
+        self._last_score = 0.0
 
         # Load or generate episode
         if seed is None:
@@ -343,6 +345,19 @@ class FakeGangEnvironment(_OpenEnvBase):
     def _do_flag(self, acc_id: Optional[str]) -> FakeGangObservation:
         if acc_id is None or acc_id not in self._accounts:
             return self._make_observation(message=f"Cannot FLAG: account '{acc_id}' not found.")
+        # No-evidence guard: charge -0.15 and deny when the agent has neither
+        # inspected the account nor invoked any reveal tool on it.
+        has_evidence = (
+            acc_id in self._inspected
+            or acc_id in self._tool_calls["reverse_image_search"]
+            or acc_id in self._tool_calls["analyze_bio"]
+            or acc_id in self._tool_calls["check_ip"]
+        )
+        if not has_evidence:
+            self._score -= 0.15
+            return self._make_observation(
+                message=f"Cannot FLAG: no evidence gathered on {acc_id}."
+            )
         if acc_id not in self._flagged:
             self._flagged.append(acc_id)
             self._account_statuses[acc_id] = "confirmed_fake"
@@ -637,8 +652,12 @@ class FakeGangEnvironment(_OpenEnvBase):
             f"{'[WIN] ' if won else '[LOSS] '}"
             f"TP={tp} FP={fp} FN={fn} "
             f"Recall={recall:.2f} Precision={precision:.2f} "
-            f"Episode reward={self._score:.2f} | "
-            f"Decision: {recommended_action} | {policy_rationale}"
+            f"Episode reward={self._score:.2f}\n"
+            f"Decision: {recommended_action}\n"
+            f"flagged_accounts: {json.dumps(list(self._flagged))}\n"
+            f"evidence_summary: {json.dumps(evidence_summary)}\n"
+            f"policy_rationale: {policy_rationale}\n"
+            f"grader_score: {self._last_grader_score:.4f}"
         )
         return self._make_observation(message=msg, terminal_reward=self._score)
 
@@ -847,12 +866,30 @@ class FakeGangEnvironment(_OpenEnvBase):
         hint = self._build_hint() if not self._done else ""
         full_message = f"{message} {hint}".strip() if hint else message
 
+        # Per-step reward delta. On terminal step, use the explicit terminal_reward
+        # (final episode reward). Otherwise, compute the score delta vs. the snapshot
+        # taken before this action, so every step returns a float reward (never None).
+        if terminal_reward is not None:
+            step_reward: Optional[float] = terminal_reward
+        else:
+            step_reward = round(self._score - self._last_score, 4)
+        self._last_score = self._score
+
+        # Build a profile for every visible account, not just inspected ones.
+        # _build_profile reads from features (which tool actions update on reveal),
+        # so uninspected accounts get a profile with hidden signals at 0.0 by default
+        # and revealed values once the corresponding tool has been called.
+        visible_profiles = []
+        for vid in self._visible_ids:
+            if vid in self._profiled:
+                visible_profiles.append(self._profiled[vid])
+            elif vid in self._accounts:
+                visible_profiles.append(self._build_profile(vid))
+
         return FakeGangObservation(
             done=self._done,
-            reward=terminal_reward,
-            visible_accounts=[
-                self._profiled[i] for i in self._inspected if i in self._profiled
-            ],
+            reward=step_reward,
+            visible_accounts=visible_profiles,
             visible_account_ids=list(self._visible_ids),
             flagged_ids=list(self._flagged),
             inspected_ids=list(self._inspected),

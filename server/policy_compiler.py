@@ -2,10 +2,15 @@
 
 Round 2: Dynamically derives detection thresholds from real platform policies.
 
-Formula (Section 3):
-    θ_raw = (C_fp · (1 − π)) / (C_fp · (1 − π) + C_fn · π)
+Formula:
+    θ_raw = (C_fn · π) / (C_fn · π + C_fp · (1 − π))
     θ*    = clamp(θ_raw / harm_weight, 0.01, 0.95)
     fp_penalty_weight = C_fp
+
+    Action rule the threshold serves: "FLAG if risk_score ≥ θ*".
+    θ_raw is the fraction of expected cost coming from missed fakes; higher
+    C_fn or higher base_rate → lower threshold (flag more aggressively).
+    harm_weight > 1 strict (lowers θ*); < 1 lenient (raises θ*).
 """
 
 from __future__ import annotations
@@ -18,6 +23,8 @@ import json
 import re
 import time
 import os
+from dotenv import load_dotenv
+load_dotenv()
 
 try:
     from tavily import TavilyClient
@@ -103,7 +110,18 @@ exactly these parameters as a JSON object.
 
 Parameters to extract:
 
-1. base_rate (float 0.0–1.0) - What percentage of accounts are fake? Look for transparency report stats.
+1. base_rate (float 0.0–1.0) - The fraction of accounts on the platform that are fake
+   impersonators at any given time (PREVALENCE, NOT enforcement rate).
+
+   IMPORTANT DISAMBIGUATION:
+   - "X% of accounts were removed", "X% were actioned", "X% impacted by enforcement"
+     → that is ENFORCEMENT RATE. Do NOT use as base_rate.
+   - "X% of accounts are estimated inauthentic", "X% confirmed fake on investigation"
+     → closer to base_rate. Use cautiously.
+   - If no prevalence estimate is found, return 0.005 as a safe default.
+   - Typical real-world fake-account prevalence is 0.1% to 3%.
+     If your extracted value exceeds 5%, it is almost certainly an enforcement
+     rate. Return 0.005 instead.
 2. fn_cost_signal ("low" | "medium" | "high" | "critical") - How bad is it to miss a fake account?
 3. fp_cost_signal ("low" | "medium" | "high") - How bad is it to wrongly remove a real account?
 4. harm_weight (float 0.5–2.0) - Does platform prioritize enforcement (>1.0) or creator protection (<1.0)?
@@ -191,21 +209,48 @@ FN_COST_MAP = {"low": 0.5, "medium": 1.0, "high": 2.0, "critical": 4.0}
 FP_COST_MAP = {"low": 0.1, "medium": 0.5, "high": 1.5}
 
 
-def sanitize_pi(pi: Any) -> float:
+def sanitize_pi(pi: Any, platform: str = "?") -> float:
+    # Fake-account PREVALENCE (base_rate) is typically 0.1–3%.
+    # Enforcement/removal RATES are typically 5–30%.
+    # The LLM often confuses the two when parsing transparency reports.
+    # Upper clamp of 0.05 guards against this extraction artifact.
+    # Lower clamp of 0.0005 avoids division instability near zero.
     if isinstance(pi, (int, float)):
         if pi <= 0:
             return 0.002
-        return max(0.0005, min(float(pi), 0.5))
+        raw = float(pi)
+        if raw > 0.05:
+            print(
+                f"⚠ [{platform}] Extracted base_rate {raw:.4f} exceeds 0.05 — "
+                f"likely an enforcement rate misread as prevalence. "
+                f"Clamped to 0.05. Check extraction sources."
+            )
+        return max(0.0005, min(raw, 0.05))
     return 0.002
 
 
 def compute_threshold(pi: float, fn_signal: str, fp_signal: str, harm_weight: float) -> tuple[float, float]:
-    """Section 3 formula. Returns (theta_star, fp_penalty_weight=C_fp)."""
+    """Bayesian threshold for the action rule "FLAG if risk_score ≥ θ*".
+
+    θ_raw = C_fn·π / [C_fn·π + C_fp·(1−π)]
+
+    Interpretation: fraction of expected cost that comes from missed fakes.
+    Higher C_fn or higher base_rate → higher θ_raw → lower threshold for
+    our action rule "FLAG if risk_score ≥ θ*" because we are more willing
+    to flag when misses are expensive.
+
+    harm_weight > 1 means stricter enforcement → dividing lowers θ* further.
+    harm_weight < 1 means lenient enforcement → dividing raises θ*.
+
+    θ* = clamp(θ_raw / harm_weight, 0.01, 0.95)
+
+    Returns (theta_star, fp_penalty_weight=C_fp).
+    """
     C_fn = FN_COST_MAP.get(fn_signal, FN_COST_MAP["high"])
     C_fp = FP_COST_MAP.get(fp_signal, FP_COST_MAP["medium"])
 
-    num = C_fp * (1.0 - pi)
-    den = C_fp * (1.0 - pi) + C_fn * pi
+    num = C_fn * pi
+    den = C_fn * pi + C_fp * (1.0 - pi)
     theta_raw = num / den if den > 0 else 0.5
 
     hw = harm_weight if isinstance(harm_weight, (int, float)) and harm_weight > 0 else 1.0
@@ -213,6 +258,65 @@ def compute_threshold(pi: float, fn_signal: str, fp_signal: str, harm_weight: fl
     theta = max(0.01, min(theta, 0.95))
 
     return theta, C_fp
+
+
+# =============== SANITY CHECK ===================
+def sanity_check_policy(policy: PlatformPolicy) -> list[str]:
+    """Per-platform sanity warnings. Does NOT block compilation; surfaces issues
+    so the operator can decide whether the policy is fit for evaluation.
+
+    No cross-platform ordering is enforced — any platform can land anywhere on
+    the [0.01, 0.95] θ* scale depending on its actual policy.
+    """
+    warnings: list[str] = []
+
+    # 1. Threshold range.
+    # Env's risk_score is typically 0.5–0.95 for true fakes and 0.1–0.4 for decoys.
+    # θ* > 0.90 → almost nothing flagged. θ* < 0.005 → everything flagged.
+    if policy.threshold > 0.90:
+        warnings.append(
+            f"threshold={policy.threshold:.3f} is very high — "
+            f"agent will almost never flag. Check fn_cost extraction."
+        )
+    if policy.threshold < 0.005:
+        warnings.append(
+            f"threshold={policy.threshold:.3f} is very low — "
+            f"agent will flag nearly everything. Check fp_cost extraction."
+        )
+
+    # 2. Base rate plausibility.
+    if policy.base_rate > 0.05:
+        warnings.append(
+            f"base_rate={policy.base_rate:.4f} exceeds 5% — "
+            f"likely an enforcement rate misread. Expected 0.001–0.03."
+        )
+
+    # 3. Confidence floor.
+    if policy.confidence < 0.60:
+        warnings.append(
+            f"confidence={policy.confidence:.2f} is below 0.60 — "
+            f"extraction quality is low. Used Fallback should be True."
+        )
+
+    # 4. Primary signal must be one of the known tool actions.
+    valid_signals = {"photo_reuse", "bio_template", "ip_cluster", "behavior"}
+    if policy.primary_enforcement_signal not in valid_signals:
+        warnings.append(
+            f"primary_signal='{policy.primary_enforcement_signal}' "
+            f"is not a valid tool action. Defaulting to photo_reuse."
+        )
+
+    return warnings
+
+
+def _print_sanity(policy: PlatformPolicy) -> None:
+    warnings = sanity_check_policy(policy)
+    if not warnings:
+        print(f"✓ sanity_check[{policy.platform}]: 0 warnings — ready to use")
+        return
+    print(f"⚠ sanity_check[{policy.platform}]: {len(warnings)} warning(s) — review before eval")
+    for w in warnings:
+        print(f"   - {w}")
 
 
 # =============== CACHING ===================
@@ -259,7 +363,7 @@ def build_fallback_policy(platform: str) -> PlatformPolicy:
     data = FALLBACK_POLICIES.get(platform, {})
     merged = {**GENERIC_FALLBACK, **data}
 
-    pi = sanitize_pi(merged["base_rate"])
+    pi = sanitize_pi(merged["base_rate"], platform)
     theta, C_fp = compute_threshold(
         pi,
         merged["fn_cost_signal"],
@@ -302,12 +406,14 @@ def compile_policy(platform: str, use_cache: bool = True) -> PlatformPolicy:
             extracted = call_groq(EXTRACTION_PROMPT.replace("{policy_text}", context))
 
             if extracted:
-                pi = sanitize_pi(extracted.get("base_rate"))
+                pi = sanitize_pi(extracted.get("base_rate"), platform)
                 fn_signal = extracted.get("fn_cost_signal", "high")
                 fp_signal = extracted.get("fp_cost_signal", "medium")
                 weight = extracted.get("harm_weight", 1.0)
                 confidence = extracted.get("policy_confidence", 0.0)
-                primary_signal = extracted.get("primary_enforcement_signal", "photo_reuse")
+                primary_signal = extracted.get("primary_enforcement_signal") or "photo_reuse"
+                if not isinstance(primary_signal, str) or not primary_signal.strip():
+                    primary_signal = "photo_reuse"
 
                 if fn_signal not in FN_COST_MAP:
                     fn_signal = "high"
@@ -315,6 +421,8 @@ def compile_policy(platform: str, use_cache: bool = True) -> PlatformPolicy:
                     fp_signal = "medium"
                 if not isinstance(weight, (int, float)):
                     weight = 1.0
+                if not isinstance(confidence, (int, float)):
+                    confidence = 0.0
 
                 theta, C_fp = compute_threshold(pi, fn_signal, fp_signal, weight)
 
@@ -334,6 +442,7 @@ def compile_policy(platform: str, use_cache: bool = True) -> PlatformPolicy:
                 )
                 save_policy_to_cache(policy)
                 print(f"✓ Compiled {platform} policy: threshold={policy.threshold:.3f}, primary_signal={policy.primary_enforcement_signal}")
+                _print_sanity(policy)
                 return policy
             else:
                 print(f"⚠ Extraction failed for {platform}, using fallback")
@@ -343,6 +452,7 @@ def compile_policy(platform: str, use_cache: bool = True) -> PlatformPolicy:
     print(f"⚠ Using fallback policy for {platform}")
     policy = build_fallback_policy(platform)
     save_policy_to_cache(policy)
+    _print_sanity(policy)
     return policy
 
 

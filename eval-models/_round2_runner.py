@@ -28,10 +28,14 @@ from dataclasses import dataclass, asdict, field
 from pathlib import Path
 from typing import Callable, Dict, List, Optional
 
-# Make parent (fake_gang_env/) importable so client + models resolve.
+# Make parent (fake_gang_env/) importable so the local client + models resolve
+# AHEAD of any same-named modules in site-packages. Always insert at index 0
+# (and drop any pre-cached aliases) — a no-op `if not in sys.path` check is
+# unsafe because the path may already be present at lower priority.
 _PARENT = Path(__file__).resolve().parent.parent
-if str(_PARENT) not in sys.path:
-    sys.path.insert(0, str(_PARENT))
+sys.path.insert(0, str(_PARENT))
+for _stale in ("models", "client"):
+    sys.modules.pop(_stale, None)
 
 from client import FakeGangEnvClient, StepResult  # noqa: E402
 from models import ActionType, FakeGangAction  # noqa: E402
