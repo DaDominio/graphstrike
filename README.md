@@ -45,9 +45,44 @@ tags:
 
 ## Round 2 — Platform-Adaptive Trust & Safety
 
-Round 2 makes detection **platform-aware**. Each episode is assigned to Instagram or Snapchat (by seed parity); a `PlatformPolicy` is compiled from real transparency-report text via a Bayesian threshold (`θ* = 1/(1 + π·C_fn/((1−π)·C_fp))`); and the high-signal account fields (`photo_reuse_score`, `bio_template_score`, `ip_cluster_id`) start hidden — the agent must spend steps on `REVERSE_IMAGE_SEARCH`, `ANALYZE_BIO`, `CHECK_IP`, plus a free `GET_POLICY`, to reveal them. Reward shape, FP penalty, grader threshold, and submission decision (`queue_for_review` / `temporary_hold` / `scheduled_ban` / `batch_takedown`) are all derived from the compiled policy rather than hardcoded.
+Round 2 makes detection **platform-aware end-to-end**. Each episode runs on a named platform (Instagram, Snapchat, X, LinkedIn, Reddit, …); a `PlatformPolicy` is compiled offline from real transparency-report text and cached per platform; the high-signal account fields start hidden and are revealed only by explicit tool actions; and a shared evaluation runner consults the LLM at exactly two decision points per suspicious account.
 
-Full architecture, scoring math, tool contracts, and training/quickstart commands live in **[`reference.md`](reference.md)** (single source of truth).
+### How the policy lives end-to-end
+
+```
+transparency reports                        per-episode runtime
+────────────────────                        ───────────────────
+Tavily search ──► Groq Llama-3.1            client.reset(task, seed)
+extracts {π, fn_cost, fp_cost,                       │
+          harm_weight, primary_signal}      env loads policy_cache/{platform}.json
+              │                                      │
+              ▼                              GET_POLICY (step 0, +0.20 bonus)
+sanitize_pi()  clamp π to [5e-4, 0.05]               │
+compute_threshold:                          DP1 (LLM): pick tool
+  θ_raw = C_fn·π / [C_fn·π + C_fp·(1−π)]      reverse_image_search / analyze_bio
+  θ*    = clamp(θ_raw / harm_weight, .01, .95)  / check_ip / done
+  fp_penalty_weight = C_fp                          │
+              │                              DP2 (LLM): flag / skip
+              ▼                                      │
+sanity_check_policy() warns on outliers     SUBMIT
+              │                              reward = tp − fp·C_fp − fn·0.3 + bonuses
+policy_cache/{platform}.json (30-day TTL)    decision_package + grader_score returned
+```
+
+The threshold `θ*` is read by the LLM in DP1/DP2 prompts; the FP-penalty `C_fp` is paid in the terminal reward at SUBMIT. Both come from the same compile-time computation — they cannot drift apart.
+
+### What's new in this Round 2 cut
+
+- **9 actions** including `get_policy`, `reverse_image_search`, `analyze_bio`, `check_ip`. `openenv.yaml` action_schema mirrors all nine.
+- **Per-step reward delta** is returned on every `/step` (not only at SUBMIT), so per-action shaping like the GET_POLICY bonus and tool penalties are immediately visible.
+- **`visible_accounts` is populated for every visible id at reset**, with hidden signals at `0.0 / ""` until tools reveal them.
+- **`StepResponse` carries top-level `decision_package` and `grader_score`** after SUBMIT — callers no longer need to grep the message.
+- **Blind FLAG is denied at flag time with `−0.15`** when the agent has neither inspected the account nor used any tool on it.
+- **Generic platform support**: the policy compiler uses the platform-agnostic Tavily query `"{platform} fake account content policy enforcement 2024 2025"` and falls back to a generic policy when no hardcoded entry exists.
+- **Two-decision-point eval runner** (`eval-models/_round2_runner.py`) drives episodes deterministically and exposes the LLM only at DP1 (tool pick) and DP2 (flag/skip). Six thin model shims (qwen, gemma, deepseek, llama, mistral, nvidia) plug in HF-router or Bedrock backends through a shared `_llm_adapters.py`.
+- **`bash check.sh`** runs a 12-step system check covering health, all 9 actions, reward shaping, and the decision package.
+
+Full architecture, formula audit, end-to-end policy lifecycle, sanity rules, scoring math, tool contracts, eval-runner internals, and quickstart commands live in **[`reference.md`](reference.md)** (single source of truth).
 
 ## Theme
 
