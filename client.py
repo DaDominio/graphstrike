@@ -54,12 +54,15 @@ class FakeGangEnvClient:
         task: str = "easy",
         seed: Optional[int] = None,
         episode_id: Optional[str] = None,
+        platform: Optional[str] = None,
     ) -> StepResult:
         payload = {"task": task}
         if seed is not None:
             payload["seed"] = seed
         if episode_id is not None:
             payload["episode_id"] = episode_id
+        if platform is not None:
+            payload["platform"] = platform
         resp = self._post("/reset", payload)
         return self._parse_result(resp)
 

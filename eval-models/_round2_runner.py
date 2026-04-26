@@ -344,7 +344,7 @@ def _run_episode(
     tuples: List[Dict] = [] if collect_tuples else None  # type: ignore[assignment]
     t0 = time.time()
 
-    res = client.reset(task=task, seed=seed)
+    res = client.reset(task=task, seed=seed, platform=platform)
     obs = res.observation
 
     # Deterministic step 0: GET_POLICY

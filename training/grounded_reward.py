@@ -1,20 +1,14 @@
-"""Env-grounded reward computation for GRPO.
-
-Given a generated completion and the (task, seed, decision_index) it was sampled
-for, we replay the full episode using a heuristic teacher and inject the
-completion at the matching turn. The episode's grader_score becomes the
-per-turn grader signal; step_reward is the env delta at the injected turn.
-
-Each call to `score_completion` runs ONE episode against the env. For GRPO with
-group size K and N prompts, that's N*K episodes per training step — keep N*K
-small (phase 1: 4*4 = 16, phase 2: 8*4 = 32).
-"""
+"""Env-grounded reward computation for GRPO."""
 
 from __future__ import annotations
 
+import signal
 import sys
+import time
 from pathlib import Path
 from typing import Callable, Optional, Tuple
+
+import requests as _requests
 
 _HERE = Path(__file__).resolve().parent
 _PARENT = _HERE.parent
@@ -28,24 +22,84 @@ from training.parse import parse_completion
 from training.rewards import compute_reward, RewardBreakdown
 from training.build_dataset import heuristic_teacher
 
+EPISODE_TIMEOUT_S = 45   # hard-kill per episode so 429 loops never stall the trainer
+_MAX_ATTEMPTS     = 8    # per individual HTTP request
 
-def _injecting_llm(
-    target_idx: int,
-    completion: str,
-    baseline: Callable[[str], str],
-):
-    """Wrap a baseline call_llm so it returns `completion` exactly once at
-    decision index `target_idx`. All other turns fall back to the baseline."""
-    state = {"i": 0, "captured_step_reward": None}
+
+class SmartSession:
+    """requests.Session wrapper that respects Retry-After on 429 and backs off
+    on 5xx. Never raises on 429 — callers handle non-2xx status codes normally
+    after all retries are exhausted."""
+
+    def __init__(self):
+        self._s = _requests.Session()
+
+    def _call(self, method: str, url: str, **kwargs):
+        for attempt in range(_MAX_ATTEMPTS):
+            try:
+                resp = getattr(self._s, method)(url, **kwargs)
+            except _requests.RequestException as exc:
+                if attempt == _MAX_ATTEMPTS - 1:
+                    raise
+                time.sleep(min(2 ** attempt, 30))
+                continue
+
+            if resp.status_code == 429:
+                wait = int(resp.headers.get("Retry-After", min(5 * (2 ** attempt), 60)))
+                print(f"  [env 429] waiting {wait}s (attempt {attempt + 1}/{_MAX_ATTEMPTS})")
+                # Ping /health every 5s during the backoff window.
+                # Keeps the env Space warm so the retry hits a hot instance,
+                # not a cold-start that adds another 30s stall.
+                health_url = url.split("/reset")[0].split("/step")[0] + "/health"
+                elapsed = 0
+                while elapsed < wait:
+                    chunk = min(5, wait - elapsed)
+                    time.sleep(chunk)
+                    elapsed += chunk
+                    if elapsed < wait:
+                        try:
+                            self._s.get(health_url, timeout=3)
+                        except Exception:
+                            pass
+                continue
+
+            return resp  # 2xx, 4xx-other, 5xx — let caller decide
+
+        return resp  # last response after all retries
+
+    def post(self, url, **kwargs):
+        return self._call("post", url, **kwargs)
+
+    def get(self, url, **kwargs):
+        return self._call("get", url, **kwargs)
+
+    def close(self):
+        self._s.close()
+
+
+_SESSION = SmartSession()
+
+
+def _make_client(base_url: str) -> FakeGangEnvClient:
+    client = FakeGangEnvClient(base_url=base_url)
+    if hasattr(client, "_session"):
+        client._session = _SESSION
+    return client
+
+
+def _injecting_llm(target_idx: int, completion: str, baseline: Callable[[str], str]):
+    state = {"i": 0}
 
     def call(prompt: str) -> str:
         idx = state["i"]
         state["i"] += 1
-        if idx == target_idx:
-            return completion
-        return baseline(prompt)
+        return completion if idx == target_idx else baseline(prompt)
 
-    return call, state
+    return call
+
+
+def _timeout_handler(signum, frame):
+    raise TimeoutError("episode timeout")
 
 
 def score_completion(
@@ -58,39 +112,45 @@ def score_completion(
     completion: str,
     client: Optional[FakeGangEnvClient] = None,
 ) -> Tuple[RewardBreakdown, dict]:
-    """Replay one episode with `completion` injected at turn `decision_index`.
+    """Replay one episode injecting `completion` at turn `decision_index`.
 
-    Returns (RewardBreakdown, debug_info). The reward composes:
-      - grader (episode-level)
-      - step  (env delta at the injected turn — looked up from collected tuples)
-      - format (1.0 iff `completion` parses for `decision_type`)
+    Returns reward=0.0 on timeout or env error — never raises.
     """
-    client = client or FakeGangEnvClient(base_url=base_url)
-    baseline = heuristic_teacher()
-    inject, state = _injecting_llm(decision_index, completion, baseline)
+    _, _, format_ok = parse_completion(completion, decision_type)
+    zero_rb = compute_reward(grader_score=0.0, step_reward=None, format_ok=format_ok)
 
-    log, tuples = _run_episode(
-        client, "grpo:rollout", platform, task, seed, inject,
-        collect_tuples=True,
-    )
+    client = client or _make_client(base_url)
+    inject = _injecting_llm(decision_index, completion, heuristic_teacher())
 
-    # Find the tuple at the target index (if the episode reached that turn).
+    signal.signal(signal.SIGALRM, _timeout_handler)
+    signal.alarm(EPISODE_TIMEOUT_S)
+    try:
+        log, tuples = _run_episode(
+            client, "grpo:rollout", platform, task, seed, inject,
+            collect_tuples=True,
+        )
+        signal.alarm(0)
+    except (TimeoutError, Exception) as exc:
+        signal.alarm(0)
+        print(f"  [grounded_reward] aborted ({type(exc).__name__}): {exc}")
+        return zero_rb, {"timeout": True, "grader": 0.0}
+
     step_reward = None
     matched = None
     if 0 <= decision_index < len(tuples):
         matched = tuples[decision_index]
         step_reward = matched.get("step_reward")
-    _, _, format_ok = parse_completion(completion, decision_type)
+
     rb = compute_reward(
         grader_score=log.grader_score,
         step_reward=step_reward,
         format_ok=format_ok,
     )
-    debug = {
+    return rb, {
         "episode_id": log.episode_id,
         "grader": log.grader_score,
-        "n_decisions_executed": len(tuples),
+        "n_decisions": len(tuples),
         "matched_turn": matched is not None,
         "format_ok": format_ok,
+        "timeout": False,
     }
-    return rb, debug
