@@ -1,0 +1,21 @@
+{
+  "platform": "LinkedIn",
+  "threshold": 0.16736401673640167,
+  "base_rate": 0.005,
+  "fn_cost_signal": "critical",
+  "fp_cost_signal": "low",
+  "harm_weight": 1.0,
+  "primary_enforcement_signal": "photo_reuse",
+  "fp_penalty_weight": 0.1,
+  "sources": [
+    "https://about.linkedin.com/transparency/community-report",
+    "https://pettauer.net/en/linkedin-tos-breaches-risk-enforcement-comparison/",
+    "https://ag.ny.gov/sites/default/files/social-media-policy-report/2025-q3-linkedin-corporation-policy.pdf",
+    "https://www.linkedin.com/posts/craigmcdonaldcybersecuritysocialimpact_attention-a-fake-linkedin-policy-violation-activity-7413828930861752320-YW1V",
+    "https://www.linkedsdr.com/blog/dangers-of-fake-linkedin-accounts-for-outreach",
+    "https://content.linkedin.com/content/dam/help/tns/en/February-2025-DSA-Transparency-Report.pdf"
+  ],
+  "confidence": 0.8,
+  "compiled_at": "2026-04-25T04:08:00.750539+00:00",
+  "used_fallback": false
+}

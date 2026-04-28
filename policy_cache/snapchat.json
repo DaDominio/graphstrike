@@ -1,0 +1,21 @@
+{
+  "platform": "Snapchat",
+  "threshold": 0.024509803921568627,
+  "base_rate": 0.005,
+  "fn_cost_signal": "low",
+  "fp_cost_signal": "low",
+  "harm_weight": 1.0,
+  "primary_enforcement_signal": "photo_reuse",
+  "fp_penalty_weight": 0.1,
+  "sources": [
+    "https://values.snap.com/privacy/transparency-h2-2024",
+    "https://values.snap.com/privacy/transparency-h1-2025",
+    "https://www.ritnerdigital.com/blog/the-surveillance-snap-how-snapchats-ai-ambitions-are-eroding-the-brand-that-built-itself-on-privacy",
+    "https://assets.ctfassets.net/dwtpq5hdcqjg/4jI8Swj0BHjUD0VzbCcxkk/61be31fb3200437dc1ea194fbdb0ad58/Snapchat_Law_Enforcement_Guide__Updated_July_1__2025_.pdf",
+    "https://www.thenews.com.pk/latest/1352548-snapchat-not-suspending-accounts-in-2025-heres-whats-really-going-on",
+    "https://values.snap.com/policy/policy-community-guidelines"
+  ],
+  "confidence": 0.5,
+  "compiled_at": "2026-04-25T08:12:09.515092+00:00",
+  "used_fallback": false
+}

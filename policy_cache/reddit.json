@@ -1,0 +1,21 @@
+{
+  "platform": "Reddit",
+  "threshold": 0.024509803921568627,
+  "base_rate": 0.005,
+  "fn_cost_signal": "low",
+  "fp_cost_signal": "low",
+  "harm_weight": 1.0,
+  "primary_enforcement_signal": "photo_reuse",
+  "fp_penalty_weight": 0.1,
+  "sources": [
+    "https://redditinc.com/policies/transparency-report-january-to-june-2025-reddit",
+    "https://redditinc.com/policies/transparency-report-july-to-december-2024",
+    "https://www.helpnetsecurity.com/2026/03/26/reddit-human-verification-changes/",
+    "https://www.theverge.com/tech/900363/reddit-human-verification-bots-crackdown",
+    "https://www.reddit.com/r/technology/comments/1s3g2fz/reddit_will_prompt_some_accounts_to_verify/",
+    "https://ag.ny.gov/sites/default/files/social-media-policy-report/2025-q3-reddit-inc-policy.pdf"
+  ],
+  "confidence": 0.5,
+  "compiled_at": "2026-04-25T04:08:48.928452+00:00",
+  "used_fallback": false
+}

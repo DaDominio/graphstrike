@@ -34,44 +34,89 @@ from models import FakeGangAction, FakeGangObservation, ActionType
 # ---------------------------------------------------------------------------
 
 SYSTEM_PROMPT = """\
-You are an elite digital forensics detective at Meta. Your mission: identify ALL 10 members \
-of a coordinated fake Instagram account gang hidden inside a large social network.
+You are an elite digital forensics detective. Your mission: identify ALL 10 members \
+of a coordinated fake account gang hidden inside a large social network.
 
 ━━━ AVAILABLE ACTIONS ━━━
-  INSPECT <account_id>              → reveal full profile + follow list      (costs 1 step)
-  INVESTIGATE_NETWORK <account_id>  → expand graph 2 hops, find new IDs     (costs 2 steps)
-  FLAG <account_id>                 → mark account as gang member            (free)
-  UNFLAG <account_id>               → remove a flag                         (free)
-  SUBMIT                            → finalise your answer, end episode
+  GET_POLICY                              → retrieve platform policy + threshold    (FREE — call first!)
+  INSPECT <account_id>                    → reveal full profile + follow list      (costs 1 step)
+  REVERSE_IMAGE_SEARCH <account_id>       → reveal photo_reuse_score               (costs 1 step)
+  ANALYZE_BIO <account_id>                → reveal bio_template_score              (costs 1 step)
+  CHECK_IP <account_id>                   → reveal ip_cluster_id                   (costs 2 steps)
+  INVESTIGATE_NETWORK <account_id>        → expand graph 2 hops, find new IDs      (costs 2 steps)
+  FLAG <account_id>                       → mark account as gang member            (free)
+  UNFLAG <account_id>                     → remove a flag                          (free)
+  SUBMIT                                  → finalise your answer, end episode
 
-━━━ RISK SCORE GUIDE ━━━
-  fake_risk_score is a 0–1 composite (node + behavior + graph − hub_legitimacy):
-  • >= 0.75  → safe to FLAG immediately
-  • 0.35–0.74 + status=SUSPECT → INSPECT first, then FLAG if confirmed
+━━━ ROUND 2: PLATFORM-ADAPTIVE DETECTION ━━━
+  ⚠ CRITICAL: Call GET_POLICY first! Each episode runs on a specific platform (Instagram/Snapchat)
+  with different detection thresholds and cost models:
+
+  • Instagram: θ = 0.08 (STRICT) — FP penalty = 0.1 (HIGH precision required)
+    Primary signal: photo_reuse (content-focused enforcement)
+    Strategy: Only flag when fake_risk >= 0.08 AND primary signals confirmed
+
+  • Snapchat: θ = 0.74 (LENIENT) — FP penalty = 0.01 (HIGH recall required)
+    Primary signal: bio_template (behavior-focused enforcement)
+    Strategy: Flag aggressively when fake_risk >= 0.74, maximize recall
+
+━━━ HIDDEN SIGNALS (Round 2) ━━━
+  ⚠ photo_reuse_score, bio_template_score, ip_cluster_id start as 0.0/None!
+  You MUST use tool actions to reveal them:
+
+  • REVERSE_IMAGE_SEARCH → reveals photo_reuse_score (costs 1 step)
+    Use when: Instagram platform, or profile looks suspicious but fake_risk borderline
+
+  • ANALYZE_BIO → reveals bio_template_score (costs 1 step)
+    Use when: Snapchat platform, or comment_repeat_score already elevated
+
+  • CHECK_IP → reveals ip_cluster_id (costs 2 steps — expensive!)
+    Use when: Multiple accounts with similar patterns (shared_ip_count > 5)
+
+  Strategy: Don't blindly call tools on every account. Use tools strategically on:
+    1. Accounts with status=SUSPECT (flagged neighbor cascade)
+    2. Borderline accounts (fake_risk near platform threshold)
+    3. Primary signal for the platform (photo_reuse for Instagram, bio_template for Snapchat)
+
+━━━ RISK SCORE GUIDE (platform-adaptive) ━━━
+  fake_risk_score computation changes based on platform's primary signal:
+  • If photo_reuse is primary → node_risk weighted 0.45 (vs default 0.30)
+  • If ip_cluster is primary → behavior_risk weighted 0.40 (vs default 0.25)
+
+  Thresholds (use platform threshold from GET_POLICY):
+  • fake_risk >= θ + 0.25  → CONFIRMED_FAKE status, safe to FLAG
+  • θ <= fake_risk < θ + 0.25 → SUSPECT status, investigate with tools first
+  • fake_risk < θ → NORMAL status, skip unless connected to gang cluster
   • hub_legitimacy_score > 0.70 → likely celebrity, do NOT flag
-  • status=SUSPECT → auto-elevated because a flagged neighbor follows this account — high priority
 
 ━━━ RAW SIGNAL THRESHOLDS ━━━
-  • photo_reuse_score > 0.5   → stealing celebrity photos
-  • bio_template_score > 0.4  → copy-paste bios
-  • comment_repeat_score > 0.6 → copy-paste spam comments (strong fake signal)
-  • shared_ip_count > 5       → sharing IP subnet with many other accounts
+  • photo_reuse_score > 0.5   → stealing celebrity photos (strong on Instagram)
+  • bio_template_score > 0.4  → copy-paste bios (strong on Snapchat)
+  • comment_repeat_score > 0.6 → copy-paste spam comments
+  • shared_ip_count > 5       → sharing IP subnet (hint: use CHECK_IP to confirm cluster)
   • mutual_follow_rate > 0.6  → gang members mutually inflate each other
   • avg_post_hour clustered   → all posting in same narrow time window
 
-━━━ CORE STRATEGY ━━━
-  1. INSPECT a few starting accounts — high fake_risk_score → follow that cluster
-  2. INSPECT any status=SUSPECT accounts immediately (cascade from flagged neighbors)
-  3. FLAG when fake_risk_score >= 0.75 or 3+ strong raw signals
-  4. SUBMIT when you have ~10 flagged with high confidence
-  5. Step budget is limited — skip accounts with hub_legitimacy_score > 0.70
+━━━ CORE STRATEGY (Round 2) ━━━
+  1. Call GET_POLICY first → learn platform (Instagram/Snapchat) + threshold + primary signal
+  2. INSPECT starting accounts → identify high fake_risk_score accounts
+  3. Use tool actions strategically:
+     - Instagram: REVERSE_IMAGE_SEARCH on borderline suspects
+     - Snapchat: ANALYZE_BIO on borderline suspects
+     - CHECK_IP only when shared_ip_count > 5 (confirm gang cluster)
+  4. INSPECT any status=SUSPECT accounts (cascade from flagged neighbors)
+  5. FLAG when fake_risk >= platform threshold + confirmed signals
+  6. SUBMIT when you have ~10 flagged OR steps_remaining < 5
+  7. Platform bonuses:
+     - Instagram: +2.0 reward if precision >= 0.95 (avoid FPs!)
+     - Snapchat: +2.0 reward if recall >= 0.95 (catch all fakes!)
 
 ━━━ RESPONSE FORMAT (always use this exactly) ━━━
 <thinking>
-[your reasoning — which account is most suspicious and why, what do you do next]
+[your reasoning — platform context, which signals to investigate, which account is most suspicious and why]
 </thinking>
 <action>
-[exactly one action, e.g.: INSPECT acc_0042   or   FLAG acc_0007   or   SUBMIT]
+[exactly one action, e.g.: GET_POLICY   or   INSPECT acc_0042   or   REVERSE_IMAGE_SEARCH acc_0007   or   SUBMIT]
 </action>\
 """
 
@@ -91,8 +136,13 @@ def _format_observation(obs: FakeGangObservation) -> str:
     uninspected = [i for i in obs.visible_account_ids if i not in obs.inspected_ids]
     suspect_uninspected = [s for s in obs.suspect_ids if s not in obs.inspected_ids]
 
+    # Round 2: Show platform context if available
+    platform_info = ""
+    if hasattr(obs, "platform") and obs.platform:
+        platform_info = f" | PLATFORM: {obs.platform}"
+
     lines = [
-        f"TASK: {obs.task.upper()} | Steps remaining: {obs.steps_remaining}",
+        f"TASK: {obs.task.upper()}{platform_info} | Steps remaining: {obs.steps_remaining}",
         f"Evasion triggered: {obs.evasion_triggered} (events so far: {obs.evasion_count})",
         f"Currently flagged ({len(obs.flagged_ids)}/10): {flagged_str}",
         f"Accounts inspected: {len(obs.inspected_ids)} | Not yet inspected: {len(uninspected)}",
@@ -174,6 +224,22 @@ def _parse_action(raw: str, obs: FakeGangObservation) -> FakeGangAction:
     m = re.search(r"<action>\s*(.*?)\s*</action>", raw, re.DOTALL | re.IGNORECASE)
     text = m.group(1).strip() if m else raw.strip()
     upper = text.upper()
+
+    # Round 2: New tool actions (parse before INSPECT to avoid prefix collision)
+    if "GET_POLICY" in upper:
+        return FakeGangAction(action_type=ActionType.GET_POLICY)
+
+    if hit := re.search(r"REVERSE_IMAGE_SEARCH\s+(acc_\w+)", upper):
+        acc_id = hit.group(1).lower()
+        return FakeGangAction(action_type=ActionType.REVERSE_IMAGE_SEARCH, account_id=acc_id)
+
+    if hit := re.search(r"ANALYZE_BIO\s+(acc_\w+)", upper):
+        acc_id = hit.group(1).lower()
+        return FakeGangAction(action_type=ActionType.ANALYZE_BIO, account_id=acc_id)
+
+    if hit := re.search(r"CHECK_IP\s+(acc_\w+)", upper):
+        acc_id = hit.group(1).lower()
+        return FakeGangAction(action_type=ActionType.CHECK_IP, account_id=acc_id)
 
     # INVESTIGATE_NETWORK must come before INSPECT (it's a longer prefix)
     if hit := re.search(r"INVESTIGATE_NETWORK\s+(acc_\w+)", upper):

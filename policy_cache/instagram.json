@@ -1,0 +1,21 @@
+{
+  "platform": "Instagram",
+  "threshold": 0.5529953917050691,
+  "base_rate": 0.03,
+  "fn_cost_signal": "critical",
+  "fp_cost_signal": "low",
+  "harm_weight": 1.0,
+  "primary_enforcement_signal": "photo_reuse",
+  "fp_penalty_weight": 0.1,
+  "sources": [
+    "https://blog.com.bot/enhance-content-policies-instagram/",
+    "https://globalriskcommunity.com/profiles/blogs/the-compliance-challenges-social-media-platforms-like-instagram-f",
+    "https://www.tradingview.com/news/invezz:a2abf193a094b:0-meta-removes-135-000-instagram-accounts-targeting-children-in-2025-clampdown/",
+    "https://medium.com/@ceo_46231/instagrams-2025-cse-ban-wave-the-full-story-from-all-angles-8a44419dd7c9",
+    "https://transparency.meta.com/reports/community-standards-enforcement/",
+    "https://medium.com/@ceo_46231/instagram-account-bans-for-counterfeit-goods-the-ultimate-guide-for-sellers-7af976b4fcc3"
+  ],
+  "confidence": 0.8,
+  "compiled_at": "2026-04-25T08:11:52.719303+00:00",
+  "used_fallback": false
+}

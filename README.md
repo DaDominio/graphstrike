@@ -13,497 +13,249 @@ tags:
   - fraud-detection
   - openenv
   - llm-agent
+base_path: /web
 ---
-<br>
+<p align="center">
+  <img src="assets/logo.png" width="520"/>
+</p>
 
 <p align="center">
-<img src="assets/logo.png" width="600"/>
+  <b>An OpenEnv-compatible RL environment for platform-adaptive fake-account detection.</b><br>
+  An LLM agent inspects a synthetic social graph, gathers evidence under a step budget,
+  and flags coordinated inauthentic accounts under a <em>platform-specific</em> enforcement threshold.
 </p>
-
-<br>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Hugging%20Face-FFD21E?style=for-the-badge&logo=huggingface&logoColor=black"/>
-  <img src="https://img.shields.io/badge/HF%20Spaces-FFBF00?style=for-the-badge&logo=huggingface&logoColor=black"/>
-  <img src="https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white"/>
-  <img src="https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white"/>
-  <img src="https://img.shields.io/badge/Gradio-F97316?style=for-the-badge&logo=gradio&logoColor=white"/>
-  <img src="https://img.shields.io/badge/OpenEnv-4B5563?style=for-the-badge&logo=envato&logoColor=white"/>
-  <img src="https://img.shields.io/badge/Amazon%20Bedrock-FF9900?style=for-the-badge&logo=amazonaws&logoColor=white"/>
+  <a href="https://huggingface.co/spaces/Pandago/training-space"><img alt="HF Space" src="https://img.shields.io/badge/🤗%20Space-Pandago%2Fgraphstrike-FFD21E?style=flat-square"/></a>
+  <a href="https://huggingface.co/Pandago/graphstrike-grpo-weights"><img alt="HF Weights" src="https://img.shields.io/badge/🤗%20Weights-graphstrike--grpo--weights-FFBF00?style=flat-square"/></a>
+  <a href="https://github.com/SaiNivedh26/graphstrike"><img alt="GitHub" src="https://img.shields.io/badge/GitHub-SaiNivedh26%2Fgraphstrike-181717?style=flat-square&logo=github"/></a>
+  <img alt="License" src="https://img.shields.io/badge/license-MIT-blue?style=flat-square"/>
 </p>
-<br>
-
-<h1 align="center">
-</h1>
-  <p align="center">
-    An OpenEnv-compatible reinforcement learning environment where an LLM agent must identify all 10 members of a coordinated fake account network hidden inside a synthetic social network. The agent learns via Reflexion and a dynamic hybrid rule/LLM policy , not via gradient updates or fine-tuning.
-    <br />
-    </p>
-</p>
-
-<br>
-
-## Theme
-
-**SUPPORT**
-
-### Customer Service Agents
-
-Complex environment where agents resolve multi-step queries using external tools and APIs.
-
-## Problem Statement
-
-**The task:** A social network contains fake accounts organised into a single coordinated ring of 10. The ring behaves in a coordinated way — same posting hour, same IP subnet, stolen celebrity photos, copy-paste bios. The agent must find all 10 by navigating a limited step budget, inspecting accounts, and flagging suspects.
-
-## Proposed Solution
-
-An OpenEnv-compatible reinforcement learning environment where an LLM agent must identify all 10 members of a coordinated fake account ring hidden inside a synthetic social network. The agent learns via **Reflexion** and a **dynamic hybrid rule/LLM policy** — not via gradient updates or fine-tuning.
-
----
-## Novelty Highlights
-
-- **Adaptive Hybrid Intelligence (Rules + LLM):** Unlike static ensembles, GraphStrike dynamically blends deterministic rules and LLM reasoning using a trust gate, shifting control as performance improves.
-- **Learning Without Fine-Tuning:** Instead of updating model weights, the agent learns through Reflexion lessons and best-trajectory memory injected into future prompts.
-- **Graph-First Detection Pipeline:** Detection is not account-by-account only; it uses cascade effects, neighbor propagation, and multi-hop graph expansion to uncover coordinated rings.
-- **Math-Grounded Decision Control:** Risk composition, trust calibration, and grader alignment are formula-driven, making behavior interpretable and reproducible.
-- **Adversarial Evasion Benchmarking:** Hard-mode includes timed evasion events, so success reflects robustness under disruption rather than overfitting to static patterns.
-- **Safety-Net by Design:** High-confidence rule overrides prevent catastrophic LLM errors while preserving LLM flexibility for strategic exploration.
----
-
-## Performance Summary
-
-We evaluate GraphStrike's hybrid rule/LLM policy across multiple *frontier models to measure how well each model handles the investigation task. All runs use
-the same inference pipeline (`inference.py`) with identical system prompts and structured logging. Each model ran: (1) seed=0 on all 3 tasks, and
-(2) seeds 0-2 on all 3 tasks for variance measurement.*
-
-**Seed=0 scores (single episode per task):**
-
-<p align="center">
-  <img src="images/table1.png" alt="Model Performance Table" width="1600"/>
-</p>
-<br>
-
-**3-seed variance scores (mean across seeds 0, 1, 2):**
-
-<p align="center">
-  <img src="images/table2.png" alt="Model Performance Table" width="1600"/>
-</p>
-<br>
-
- **Rule-Based Baseline (no LLM, deterministic)**
-
-<p align="center">
-  <img src="images/table3.png" alt="Model Performance Table" width="1600"/>
-</p>
-<br>
 
 ---
 ## Table of Contents
 
-1. [What This Is](#1-what-this-is)
-2. [The Problem: How Fake Detection Actually Works](#2-the-problem-how-fake-detection-actually-works)
-3. [Synthetic Data Generation](#3-synthetic-data-generation)
-4. [Data Model](#4-data-model)
-5. [The RL Environment](#5-the-rl-environment)
-6. [Risk Scoring Mathematics](#6-risk-scoring-mathematics)
-8. [The LLM Policy (Qwen3 via Bedrock)](#8-the-llm-policy-qwen3-via-bedrock)
-9. [Reflexion — How the Agent Learns](#9-reflexion--how-the-agent-learns)
-10. [Hybrid Policy — The Novel Contribution](#10-hybrid-policy--the-novel-contribution)
-11. [Training Loop End-to-End](#11-training-loop-end-to-end)
-12. [API Reference](#12-api-reference)
-13. [Docker Deployment](#13-docker-deployment)
-14. [Submission Requirements](#14-submission-requirements)
-15. [Verification & Validation](#15-verification--validation)
+## TL;DR
+
+GraphStrike is designed as a platform-adaptive reinforcement learning system trained using GRPO on structured graph environments.The system introduces dynamic policy compilation, where detection thresholds are derived from real time platform policies rather than being hardcoded.The action space is expanded to include cost-aware investigative tools, enabling the agent to actively gather evidence before making decisions.A hidden-signal architecture forces the model to balance exploration and exploitation by revealing signals only through actions.The model learns a policy-conditioned behavior, where both decision-making and reward signals are aligned with platform-specific thresholds.
+
+**Watch our 2-min Quick video:** [here you go](https://drive.google.com/file/d/11m1slCylVijeorXr95eF_ci94LR9dT5r/view)
+
+**Read our slides :  [here you go](https://canva.link/dqq78p5orsjh39r)**
+
+## Why this environment
+
+Most fake-account detection benchmarks frame the problem as classification: feature vector in, fake/real label out. That misses the structure of the real problem. A real investigator:
+
+1. Cannot see all signals upfront — each costs a tool call.
+2. Operates under a **step budget**.
+3. Applies **different enforcement thresholds** depending on the platform.
+4. Faces **asymmetric costs** — false positives are catastrophic on Instagram, much cheaper on Snapchat.
+
+GraphStrike encodes all four constraints simultaneously. We don't know of another benchmark environment that does.
 
 ---
 
-## 1. What is this !?
+## System Architecture
 
-This is an **OpenEnv hackathon** submission. OpenEnv is a framework for building RL environments with a standard microservice interface (`/reset`, `/step`, `/state`) so that any agent implementation can plug in.
+<p align="center">
+  <img src="assets/sys arch.png" width="780"/>
+</p>
 
-**What makes this non-trivial:**
-
-- The network is large (50–1000 accounts depending on difficulty).
-- Fake accounts are mixed with innocent high-signal "decoy" accounts.
-- In hard mode, the gang actively evades — dropping intra-gang follows, renaming profiles — while the agent is mid-investigation.
-- The agent cannot see the full network upfront: it must explore via INSPECT and INVESTIGATE_NETWORK actions, spending steps to reveal information.
-
-**What makes the learning novel:**
-
-- The LLM (inference via AWS Bedrock) cannot be fine-tuned — it is a black-box API.
-- The agent learns via **Reflexion**: post-episode lessons are written back into memory and injected into every future prompt.
-- A **dynamic hybrid policy** (α-weighted) blends the LLM with a deterministic rule engine, with the blend weight α updating based on recent win rate. Rules dominate early; the LLM takes over as it proves itself.
-
-### System Architecture
-
-![System Architecture](assets/sys%20arch.png)
+The agent talks to the FastAPI environment over an OpenEnv-compatible HTTP API. Episodes are deterministic from a seed; the policy threshold for each platform is precomputed once via the Bayesian policy compiler and frozen into every dataset row.
 
 ---
 
-## 2. The Problem: How Fake Detection Actually Works
+## The Bayesian Policy Compiler
 
-A real-world fake account detector does **not** read post content. Detection relies on three categories of signals computed from metadata:
+Every platform enforces moderation policy differently. Rather than hardcoding a threshold, we **derive** it from each platform's public transparency reports.
 
-### Signal Hierarchy (Node -> Behavioral -> Graph)
+<p align="center">
+  <img src="assets/r2-berman.png" width="780"/>
+</p>
 
-![Signal Hierarchy](assets/gs.png)
+Per-platform transparency text → LLM extractor (Groq Llama 3.1 8B) → calibrated parameters (`harm_weight`, `base_rate`, `enforcement_aggressiveness` + per-parameter confidences `α/β/γ`) → Bayesian compiler → threshold θ → frozen into every training row.
 
-- **Node signals (offline):** content fingerprints like photo reuse, bio-template similarity, and comment repetition provide the first suspicion layer.
-- **Behavioral signals (temporal/device):** coordinated posting hour, account-age clustering, and shared IP subnet add stronger gang-level evidence.
-- **Graph signals (live at INSPECT):** mutual follows, flagged-neighbor growth, and cluster alignment are hardest to evade, so they carry the highest weight in risk scoring.
-- **False-positive control:** high-legitimacy hubs (for example celebrities) are down-weighted through hub-legitimacy discounting.
+<p align="center">
+  <img src="assets/r2-formula.jpeg" width="620"/>
+</p>
 
----
+**Compiled platform policies:**
 
-## 3. Synthetic Data Generation
+| Platform                          |    θ | Primary Signal | FP Penalty | FN Cost  | FP Cost |
+| --------------------------------- | ----: | -------------- | ---------: | -------- | ------- |
+| Instagram                         | 0.369 | photoreuse     |       0.10 | critical | low     |
+| X / Twitter                       | 0.091 | photoreuse     |      ~0.10 | critical | medium  |
+| Snapchat                          | 0.025 | biotemplate    |       0.01 | high     | low     |
+| **LinkedIn** _(held-out)_ | 0.167 | photoreuse     |       0.10 | high     | medium  |
 
-**File:** `server/generator.py`
-
-Episodes are generated deterministically by seed. 150 episodes are pre-generated (50 per task) and cached as JSON files in `episodes/`.
-
-### Network Composition
-
-| Task | Network size | Gang | Decoys | Real | Max steps |
-|---|---|---|---|---|---|
-| easy | 50 | 10 | 0 | 40 | 30 |
-| medium | 200 | 10 | 20 | 170 | 50 |
-| hard | 1000 | 10 | 50 | 940 | 80 |
-
-- **Gang accounts:** All 10 share `base_age` (same creation week), tightly clustered `avg_post_hour`, high `photo_reuse_score`/`bio_template_score`, `comment_repeat_score` in [0.60, 0.90], `ip_cluster_id = "ip_gang_{seed}"`, and dense intra-gang follow edges (density 0.60–0.80).
-- **Real accounts:** Log-normal follower distributions, unique IP clusters, low fake scores.
-- **Decoy accounts** (medium/hard): Real accounts with elevated fraud scores (0.20–0.40 range) — they look suspicious but are NOT gang members and penalise reckless flagging.
-- **Celebrity accounts** (2 per episode): 100k–5M followers, very low fake scores, high `hub_legitimacy_score`.
-- **Zero-edge isolates** (2 per episode): No edges — test whether the agent wastes steps on disconnected nodes.
+The same account with `fake_risk=0.20, photo_reuse=0.65` is a clear flag on Snapchat (θ=0.025), but on Instagram (θ=0.369) the agent must verify additional evidence first. **The same observation produces a different correct action depending on platform context.**
 
 ---
 
-## 4. Data Model
+## Environment Mechanics
 
-**File:** `models.py`
+### Difficulty Tiers
 
-### ActionType
+| Task             |     Network | Gang | Decoys | Step Budget | Evasion              |
+| ---------------- | ----------: | ---: | -----: | ----------: | -------------------- |
+| **Easy**   |    50 accts |   10 |      0 |          30 | None                 |
+| **Medium** |   200 accts |   10 |     20 |          50 | Triggered at step 20 |
+| **Hard**   | 1,000 accts |   10 |     50 |          80 | 4 recurring events   |
 
-| Value | Cost | Effect |
-|---|---|---|
-| `inspect` | 1 step | Reveals full `AccountProfile` + follow list |
-| `investigate_network` | 2 steps | Expands 2 hops; reveals account IDs only |
-| `flag` | 0 steps | Marks account as gang member; triggers SUSPECT cascade |
-| `unflag` | 0 steps | Removes flag; clears CONFIRMED_FAKE status |
-| `submit` | 0 steps | Ends episode; triggers scoring |
+Decoys are legitimate accounts engineered to look suspicious — they punish agents that flag on surface-level anomaly scores without gathering signal evidence.
 
-### AccountProfile — key fields
+### Action Space
 
-| Category | Fields |
-|---|---|
-| Raw counts | `follower_count`, `following_count`, `post_count` |
-| Temporal | `avg_post_hour`, `account_age_days` |
-| Content pipeline (0–1) | `photo_reuse_score`, `bio_template_score`, `comment_repeat_score` |
-| IP/device | `shared_ip_count`, `ip_cluster_id` |
-| Graph (live at INSPECT) | `mutual_follow_rate`, `flagged_neighbor_count`, `avg_neighbor_photo_reuse`, `post_hour_cluster_score` |
-| Risk breakdown | `fake_risk_score`, `node_risk`, `behavior_risk`, `graph_risk`, `hub_legitimacy_score` |
-| Evasion/status | `name_change_count`, `status` (NORMAL/SUSPECT/CONFIRMED_FAKE) |
+| Action                   | Cost | Effect                                                         |
+| ------------------------ | ---: | -------------------------------------------------------------- |
+| `getpolicy`            |    0 | Returns compiled policy: threshold, primary signal, FP penalty |
+| `inspect`              |    1 | Expand visible neighborhood of an account                      |
+| `investigate_network`  |    1 | 2-hop graph traversal                                          |
+| `reverse_image_search` |    1 | Reveal `photo_reuse_score`                                   |
+| `analyze_bio`          |    1 | Reveal `bio_template_score`                                  |
+| `check_ip`             |    2 | Reveal `ip_cluster_signal` (higher cost = legal overhead)    |
+| `flag` / `unflag`    |    0 | Mark / un-mark account; triggers SUSPECT cascade               |
+| `submit`               |    0 | End episode → grader scores                                   |
 
-### FakeGangObservation — what the agent sees each step
+The step budget is shared across all actions. An agent that calls `check_ip` on every account exhausts its budget before flagging anyone.
 
-`done`, `reward`, `visible_accounts`, `visible_account_ids`, `flagged_ids`, `inspected_ids`, `suspect_ids`, `graph_edges`, `steps_remaining`, `evasion_triggered`, `evasion_count`, `task`, `message`
+### Detection Signals
 
----
+<p align="center">
+  <img src="assets/gs.png" width="780"/>
+</p>
 
-## 5. The RL Environment
+Visible by default: `fake_risk_score`, `node_risk`, `behavior_risk`, `graph_risk`, `hub_legitimacy`, `shared_ip_count`. Hidden until reveal-tool: `photo_reuse_score`, `bio_template_score`, `ip_cluster_signal`.
 
-**File:** `server/environment.py`
-
-### Episode Lifecycle & Action Mechanics
-
-![Episode Flow](assets/episode.png)
-
-**FLAG cascade (dual):** When FLAG(X) is called — (1) every visible account that X follows becomes SUSPECT via the follow-graph, and (2) every visible account sharing X's `ip_cluster_id` becomes SUSPECT. Gang members share `ip_gang_{seed}`; real accounts have unique IPs → zero false positives.
-
-### Reward Function
+### Risk Score (platform-adaptive)
 
 ```
-base_reward = tp×1.0 − fp×0.5 − fn×0.3
-
-Win condition:
-  easy/medium:  recall ≥ 0.8 AND precision ≥ 0.7
-  hard:         recall ≥ 0.9 AND precision ≥ 0.8
-
-Bonuses:
-  +5.0   full win
-  +3.0   perfect recall
-  +2.0   partial win (high recall, low precision)
-  +1.0   efficiency (SUBMIT with ≥50% steps remaining)
-  −1.0   per evasion event (hard mode)
-  −2.0   forced submit (ran out of steps)
+fake_risk = clip(
+    w_node × node_risk + w_behavior × behavior_risk + w_graph × graph_risk
+  − 0.25 × hub_legitimacy,
+    0.0, 1.0)
 ```
 
-### Evasion (hard mode)
-
-- **`unfollow_intragang`:** 30% of intra-gang edges randomly removed mid-investigation — destroys graph signal. Fires 4 times (steps 15, 30, 45, 60).
-- **`rename_count`:** Random gang members get `name_change_count += 1` — a visual evasion signal.
+Weights `w_*` are platform-specific — `photoreuse`-primary platforms boost node weight, `ipcluster`-primary platforms boost behavior weight. `hub_legitimacy` subtracts a downward correction so well-connected community hubs aren't flagged just for being well-connected.
 
 ---
 
-## 6. Risk Scoring Mathematics
+## Reward Function — Composable Rubrics
 
-**File:** `server/scoring.py` — all functions are stateless and deterministic.
+We didn't use OpenEnv's `Rubric` class but independently arrived at the same architectural principle. The reward is **three orthogonal components, logged separately to W&B** rather than collapsed into one opaque score.
 
-![pipw](images/big.png)
+| Component               | Type                   |        Weight | Measures                                                       |
+| ----------------------- | ---------------------- | ------------: | -------------------------------------------------------------- |
+| `grader_reward`       | terminal (per episode) | **1.0** | Precision × Recall × Efficiency × PlatformFactor            |
+| `format_reward`       | per-turn               | **0.3** | Valid JSON action — structural correctness                    |
+| `policy_aware_reward` | per-turn               | **0.2** | Called `getpolicy` first? Used reveal tools before flagging? |
 
-![Risk Scoring Formulas 1](assets/formulas-1.png)
+```
+# Grader (at submission)
+recall = TP / 10;  precision = TP / max(TP+FP, 1)
+efficiency = max(0, (max_steps − steps_used) / max_steps)
+threshold_factor = 1.0 − θ           # stricter platforms get a precision bonus
+if recall ≥ 0.8 and precision ≥ 0.7:
+    score = 0.55 + 0.20·recall + 0.15·precision + 0.10·efficiency + 0.05·threshold_factor
+else:
+    score = 0.30·recall + 0.10·precision
 
-![Risk Scoring Formulas 2](assets/formulas-2.png)
+# Per-turn (broadcast for GRPO)
+per_turn_reward(t) = grader + clip(step_reward(t) · 0.1, −0.5, 0.5)
+```
+
+The `threshold_factor` is the mechanism that rewards platform-appropriate behavior: an agent on Instagram has to be more conservative with flags to compensate for the lower `threshold_factor`.
 
 ---
 
-## 8. The LLM Policy (Qwen3 via Bedrock)
+## Training: Cross-Platform GRPO
 
-**File:** `agent/policy.py`
+|                 |                                                                                                           |
+| --------------- | --------------------------------------------------------------------------------------------------------- |
+| Model           | `Qwen/Qwen2.5-0.5B-Instruct`                                                                            |
+| Algorithm       | GRPO (TRL)                                                                                                |
+| Train platforms | Instagram + X + Snapchat (shuffled mixture, 360 prompts)                                                  |
+| Held-out eval   | LinkedIn (never seen during training)                                                                     |
+| Hardware        | T4 GPU (collab full-scale training) / Trial Runs Nvidia A10G via Hf spaces                                |
+| W&B run         | `pleasant-water-16` ([report](https://api.wandb.ai/links/sainivedh26-amrita-vishwa-vidyapeetham/sw1rj3tb)) |
 
-**Model:** `qwen.qwen3-next-80b-a3b` via AWS Bedrock Converse API (`maxTokens=512, temperature=0.4`)
+### Why the shuffled mixture matters
 
-### Prompt Structure
+If we trained on Instagram only, the model would learn to treat the platform parameter θ as a constant. By interleaving platforms within batches, the model **must** read `platform` and `threshold` from every observation to decide correctly — there is no memorizable answer. This is what enables zero-shot LinkedIn transfer.
 
-Every step, the policy builds a prompt from three components:
+### Training results
 
-```
-[reflections from past episodes]       ← grows richer every episode
-[best trajectory few-shot example]     ← best win ever, showing the full action log
-━━━ CURRENT CASE ━━━
-[formatted observation]                ← status badges, risk scores, suspect list
-What is your next action?
-```
+<p align="center">
+  <img src="assets/r2-trained.jpeg" width="780"/><br>
+  <em>Trained: ~0.07 → ~0.30+ across 25 GRPO steps</em>
+</p>
 
-Accounts in the observation are **sorted by `fake_risk_score` descending**, with status badges prepended. `fnbr=N(!)` highlights when `flagged_neighbor_count > 0`; `[HUB?]` warns the LLM not to flag high-legitimacy accounts.
+<p align="center">
+  <img src="assets/r2-untrained.jpeg" width="780"/><br>
+  <em>Untrained baseline (gibberish actions, JSON parse fails): r_total ≈ 0.0 floor</em>
+</p>
 
-### Required Response Format
+**Three phases of the run:**
 
-```xml
-<thinking>
-Reasoning — which account is most suspicious and why.
-</thinking>
-<action>
-INSPECT acc_0041
-</action>
-```
+1. **Steps 1–5 (format learning)** — high gradient norms (19–57), volatile rewards, model rapidly adjusting toward structured JSON.
+2. **Steps 6–15 (policy discovery)** — reward stabilizes at 0.20–0.27, GRPO group variance shows real differentiation between trajectories.
+3. **Steps 16–25 (consolidation)** — peaks at 0.33; smoothed reward continues rising.
 
-If parsing fails, a heuristic fallback inspects the highest-scored uninspected account. Retries use exponential backoff (1s, 2s, 4s) up to 3 attempts.
-
----
-
-## 9. Reflexion — How the Agent Learns
-
-**Files:** `agent/reflection.py`, `agent/memory.py`
-
-The agent **cannot** update Qwen3's weights — Bedrock is a black-box API. Instead, it learns via **Reflexion**: post-episode lessons are written as text and injected into future prompts.
-
-### Reflexion Learning Loop
-
-![Reflexion Learning Loop](assets/reflexion.png)
-
-
-
-```
-Episode N:
-  1. LLM acts using: system_prompt + reflections[last 4] + best_trajectory
-  2. Episode ends → WIN or LOSS
-  3. Post-episode:
-     LOSS → generate_reflection(action_log, outcome) → lesson stored
-     WIN  → save trajectory if better reward + generate_success_reflection
-
-Episode N+1:
-  → last 4 reflections + best win trajectory injected into prompt
-  → LLM has learned from its past
-```
-
-**Example generated reflection:**
-> *"The starting accounts were all real; I wasted 8 steps inspecting low-signal nodes before pivoting. When photo_reuse and bio_template are both below 0.3 after 3 inspections, immediately use INVESTIGATE_NETWORK to jump to a different graph region."*
-
-All memory persists in a Docker volume (`memory/`) across container restarts — reflections, best trajectories, win history, and α values per task.
+**Held-out LinkedIn:** ~0.92 grader score on medium-task episodes despite zero LinkedIn training data — the model reads `θ=0.167` from the prompt and behaves correctly.
 
 ---
 
-## 10. Hybrid Policy — The Novel Contribution
+## Quick Start
 
-**File:** `agent/hybrid_policy.py`
-
-**Key insight:** A new LLM agent starts dumb but improves over time. A rule engine is always consistent but cannot adapt. The hybrid policy exploits both — rules provide a safety net early while the LLM builds its track record; once the LLM proves itself, rules step back.
-
-### Architecture
-
-![Hybrid Policy Architecture](assets/hybrid.png)
-
-### Alpha (α): The Trust Weight
-
-α is a per-task value in [0.20, cap] representing current trust in the LLM:
-
-```
-reflection_factor = min(1.0, n_reflections / 4.0)
-raw = 0.20 + reflection_factor × (0.80 × recent_win_rate + 0.12)
-α = clamp(raw, 0.20, cap)
-```
-
-| Task | α cap | Rationale |
-|---|---|---|
-| easy | 0.50 | Rule engine alone achieves ~91% — LLM should assist, not override |
-| medium | 0.70 | Decoys require some LLM judgment, but cascade must stay |
-| hard | 0.85 | LLM needs latitude for evasion adaptation, but safety rules remain |
-
-**Alpha trajectory over training (easy task, cap=0.50):**
-
-| Episode | Win rate | Reflections | α (capped) |
-|---|---|---|---|
-| 1 | 0% | 0 | 0.20 |
-| 5 | 20% | 4 | 0.48 |
-| 10 | 50% | 9 | **0.50** |
-| 20 | 80% | 19 | **0.50** |
-
-<br>
-
-![System Architecture](images/plot.png)
-
-### Rule Confidence Levels
-
-| Situation | Action | Confidence |
-|---|---|---|
-| Steps remaining = 0 | SUBMIT | 1.00 |
-| Uninspected SUSPECT accounts exist | INSPECT suspects[0] | 0.95 |
-| `fake_risk ≥ 0.85` | FLAG that account | 0.95 |
-| `fake_risk` in [threshold, 0.85) | FLAG that account | 0.70+ |
-| 10 accounts already flagged | SUBMIT | 0.85 |
-| Steps remaining ≤ 3 | SUBMIT | 0.90 |
-| Uninspected accounts available | INSPECT top candidate | 0.30 |
-
-At **α=0.20** (early): rules dominate (~90% of decisions). At **α=0.50** (moderate): LLM controls exploration; rules control safety. At **α=0.85** (high): LLM controls most decisions; rules only override forced submits and uninspected suspects.
-
-α is saved to `memory/alpha_{task}.json` and persists across Docker restarts — the agent doesn't reset to 0.20 every time.
-
----
-
-## 11. Training Loop End-to-End
-
-**File:** `train.py`
-
-### Curriculum
-
-| Phase | Episodes | Task | Goal |
-|---|---|---|---|
-| 1 | 1–20 | easy | Learn basic signal thresholds, build first reflections |
-| 2 | 21–35 | medium | Handle decoys, learn evasion response |
-| 3 | 36–50 | hard | Feature-only detection, persistent evasion |
-
-Seeds rotate deterministically: `seed = (episode_num + task_offset) % 50`
-
-### Per-Episode Flow
-
-```
-for ep in range(n_episodes):
-
-  1. DETERMINE TASK      curriculum_task(ep) or fixed task
-  2. COMPUTE ALPHA       compute_alpha(win_rate, n_reflections, task)
-  3. LOAD CONTEXT        last 4 reflections + best win trajectory
-  4. RUN EPISODE         while not obs.done:
-                           blend(rule_action, llm_action, rule_conf, α)
-                           → obs = env.step(final)
-  5. POST-EPISODE        record_win → update α → generate reflection
-  6. LOG                 task | win/loss | reward | recall | precision | α | modes
-```
-
-Episode metrics (flushed to `runs/metrics.jsonl` every 5 episodes) include: `episode`, `task`, `won`, `reward`, `recall`, `precision`, `steps_used`, `alpha_used`, `mode_agree`, `mode_rule`, `mode_llm`, `n_reflections_used`.
-
-You can watch the transition: early episodes have high `rule` counts; later episodes have high `agree` counts (LLM learned to make the same decisions as the rules, but also brings strategic reasoning the rules can't).
-
----
-
-## 12. API Reference
-
-**File:** `server/app.py`
-
-| Endpoint | Method | Description |
-|---|---|---|
-| `/health` | GET | `{"status": "healthy"}` |
-| `/tasks` | GET | Task list + `action_schema` + `score_range: [0.0, 1.0]` |
-| `/reset` | POST | Accepts `{task, seed}` → returns initial observation |
-| `/step` | POST | Accepts any `FakeGangAction` → returns updated observation |
-| `/state` | GET | Current episode metadata (step count, task, score) |
-| `/grader` | GET | Normalised [0.0, 1.0] score after SUBMIT |
-| `/baseline` | POST | Runs rule-based agent on all 3 tasks, returns scores |
-
-**Baseline performance:**
-
-| Task | Seed=0 score | Win rate (50 seeds) | Mean score (50 seeds) |
-|---|---|---|---|
-| easy | 0.91 | 100% | ~0.91 |
-| medium | 0.906 | 84% | ~0.77 |
-| hard | 0.9038 | 52% | ~0.47 |
-
----
-
-## 13. Docker Deployment
+### Option 1 — Use the hosted environment
 
 ```bash
-# Build
-docker build -f server/Dockerfile -t graphstrike .
+# Health check
+curl https://pandago-training-space.hf.space/health
 
-# Run
-docker run -it \
-  -e AWS_ACCESS_KEY_ID=your_key \
-  -e AWS_SECRET_ACCESS_KEY=your_secret \
-  -v $(pwd)/memory:/app/memory \
-  -v $(pwd)/runs:/app/runs \
-  -p 8000:8000 \
-  graphstrike
+# Reset an episode
+curl -X POST https://pandago-training-space.hf.space/reset \
+  -H 'Content-Type: application/json' \
+  -d '{"task":"easy","seed":0,"platform":"Instagram"}'
+
+# Step
+curl -X POST https://pandago-training-space.hf.space/step \
+  -H 'Content-Type: application/json' \
+  -d '{"action":{"action_type":"getpolicy","account_id":null}}'
 ```
 
-The `memory/` and `runs/` volumes preserve all learning between container restarts.
+The full OpenAPI schema is at `/docs`. The Gradio playground is at `/`.
 
-### Environment Variables
+### Option 2 — Run locally
 
-| Variable | Default | Description |
-|---|---|---|
-| `AWS_ACCESS_KEY_ID` | (required) | For Bedrock/Qwen3 access |
-| `AWS_SECRET_ACCESS_KEY` | (required) | For Bedrock/Qwen3 access |
-| `AWS_DEFAULT_REGION` | `us-east-1` | Bedrock region |
-| `TRAIN_TASK` | (curriculum) | Fix to `easy`/`medium`/`hard` |
-| `TRAIN_EPISODES` | `50` | Total training episodes |
-| `TRAIN_TEMP` | `0.4` | LLM sampling temperature |
-| `TRAIN_VERBOSE` | `0` | Set `1` for per-step action logging |
-| `SERVER_PORT` | `8000` | FastAPI port |
-
-### Startup Sequence (`run.sh`)
-
+```bash
+git clone https://github.com/SaiNivedh26/graphstrike
+cd graphstrike
+pip install -r requirements.txt
+python3 -m server.app   # serves on :7860
 ```
-1. Validate AWS credentials
-2. python server/generator.py    → generates 150 episode JSON files
-3. uvicorn server.app:app        → starts the environment server
-4. Health check polling          → waits until /health responds
-5. python train.py               → runs the full training loop
-```
+
+### Option 3 — Reproduce training
+
+Open the Colab notebook (one click → run all):
+👉 **[Training Colab — GRPO on shuffled platform mixture](https://colab.research.google.com/drive/10oiBzwDy6ZxwxYqhuVniRuzgG7cnrF2E?usp=sharing)**
 
 ---
 
+## References
 
-### Full HTTP validation
+|                                      |                                                                                                      |
+| ------------------------------------ | ---------------------------------------------------------------------------------------------------- |
+| 🎬**Demo video**               | [drive.google.com](https://drive.google.com/file/d/11m1slCylVijeorXr95eF_ci94LR9dT5r/view?usp=sharing)  |
+| 📊**Slides (5-min explainer)** | [canva.link/dqq78p5orsjh39r](https://canva.link/dqq78p5orsjh39r)                                        |
+| 📓**Training Colab**           | [Colab notebook](https://colab.research.google.com/drive/10oiBzwDy6ZxwxYqhuVniRuzgG7cnrF2E?usp=sharing) |
+| 🤗**Trained weights**          | [Pandago/graphstrike-grpo-weights](https://huggingface.co/Pandago/graphstrike-grpo-weights/tree/main)   |
+| 🤗**Hosted environment**       | [Pandago/graphstrike Space](https://huggingface.co/spaces/Pandago/training-space)                       |
+| 📈**W&B Report**               | [pleasant-water-16](https://api.wandb.ai/links/sainivedh26-amrita-vishwa-vidyapeetham/sw1rj3tb)         |
+| 💻**Source**                   | [github.com/SaiNivedh26/graphstrike](https://github.com/SaiNivedh26/graphstrike)                        |
 
-```bash
-python3 -m uvicorn server.app:app --port 8001 &
-sleep 3
-python3 validate.py --url http://localhost:8001
-# Expected: Results: 24/24 passed — all OK
-```
-
-### Deployed Endpoint Verification
-
-```bash
-curl https://pandago-graphstrike.hf.space/health
-# → {"status": "healthy"}
-
-curl https://pandago-graphstrike.hf.space/tasks
-# → {"tasks": ["easy","medium","hard"], "action_schema": {...}, "score_range": [0.0, 1.0]}
-
-curl -X POST https://pandago-graphstrike.hf.space/baseline
-# → {"scores": {"easy": 0.91, "medium": 0.906, "hard": 0.9038}, "agent": "rule_based"}
-```
+---
 
 ---
 
