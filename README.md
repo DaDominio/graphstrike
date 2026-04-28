@@ -33,6 +33,7 @@ base_path: /web
 </p>
 
 ---
+## Table of Contents
 
 ## TL;DR
 
